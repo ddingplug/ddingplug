@@ -424,12 +424,12 @@ grant execute on function public.is_admin_user() to authenticated;
 -- ---------- mod version config ----------
 create table if not exists public.mod_version_config (
   id text primary key default 'ddingplug',
-  latest_version text not null default '0.6.7',
+  latest_version text not null default '0.1.0',
   minecraft_version text not null default '1.21.4',
   fabric_loader text not null default '0.16.10+',
   fabric_api text not null default '0.119.2+1.21.4',
   download_url text not null default 'https://ddingplug.vercel.app/download',
-  release_note text not null default '업데이트 확인 UI 추가',
+  release_note text not null default '공식 0.1.0 배포판',
   required boolean not null default false,
   updated_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -437,16 +437,19 @@ create table if not exists public.mod_version_config (
   constraint mod_version_config_singleton check (id = 'ddingplug')
 );
 
-alter table public.mod_version_config add column if not exists latest_version text not null default '0.6.7';
+alter table public.mod_version_config add column if not exists latest_version text not null default '0.1.0';
 alter table public.mod_version_config add column if not exists minecraft_version text not null default '1.21.4';
 alter table public.mod_version_config add column if not exists fabric_loader text not null default '0.16.10+';
 alter table public.mod_version_config add column if not exists fabric_api text not null default '0.119.2+1.21.4';
 alter table public.mod_version_config add column if not exists download_url text not null default 'https://ddingplug.vercel.app/download';
-alter table public.mod_version_config add column if not exists release_note text not null default '업데이트 확인 UI 추가';
+alter table public.mod_version_config add column if not exists release_note text not null default '공식 0.1.0 배포판';
 alter table public.mod_version_config add column if not exists required boolean not null default false;
 alter table public.mod_version_config add column if not exists updated_by uuid references auth.users(id) on delete set null;
 alter table public.mod_version_config add column if not exists created_at timestamptz not null default now();
 alter table public.mod_version_config add column if not exists updated_at timestamptz not null default now();
+
+alter table public.mod_version_config alter column latest_version set default '0.1.0';
+alter table public.mod_version_config alter column release_note set default '공식 0.1.0 배포판';
 
 insert into public.mod_version_config (
   id,
@@ -460,12 +463,12 @@ insert into public.mod_version_config (
 )
 values (
   'ddingplug',
-  '0.6.7',
+  '0.1.0',
   '1.21.4',
   '0.16.10+',
   '0.119.2+1.21.4',
   'https://ddingplug.vercel.app/download',
-  '업데이트 확인 UI 추가',
+  '공식 0.1.0 배포판',
   false
 )
 on conflict (id) do nothing;

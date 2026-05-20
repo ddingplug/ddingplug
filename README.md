@@ -58,6 +58,13 @@ Discord OAuth Redirect URL에는 배포 도메인과 로컬 개발 주소를 등
 
 모드 제보 API는 `consentAccepted: true`가 포함된 요청만 처리합니다. 자동 판매, 자동 클릭, 자동 구매, 서버 조작, 플레이 자동화 기능은 포함하지 않습니다.
 
+## 현재 모드 배포 기준
+
+- 최신 Fabric 모드: `0.1.0`
+- 지원 Minecraft: `1.21.4`
+- Fabric Loader: `0.16.10+`
+- Fabric API: `0.119.2+1.21.4`
+
 ## 오픈 전 체크
 
 - `npm run build` 성공 확인
@@ -66,3 +73,4 @@ Discord OAuth Redirect URL에는 배포 도메인과 로컬 개발 주소를 등
 - Supabase schema 재실행 및 RLS/RPC 동작 확인
 - Discord OAuth Redirect URL 확인
 - 채널톡 플러그인 키 확인
+- 다운로드 페이지에 실제 `ddingplug-fabric-0.1.0` 배포 파일 업로드

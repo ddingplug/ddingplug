@@ -11,15 +11,23 @@ const POLICY_VERSION = '2026-05-20';
 const DEFAULT_MOD_VERSION = {
   ok: true,
   modId: 'ddingplug',
-  latestVersion: '0.6.7',
+  latestVersion: '0.1.0',
   minecraftVersion: '1.21.4',
   fabricLoader: '0.16.10+',
   fabricApi: '0.119.2+1.21.4',
   downloadUrl: 'https://ddingplug.vercel.app/download',
-  releaseNote: '업데이트 확인 UI 추가',
+  releaseNote: '공식 0.1.0 배포판',
   required: false
 };
+const MAX_DOWNLOAD_BYTES = 8 * 1024 * 1024;
 const money = (n) => `${Number(n || 0).toLocaleString()} G`;
+const formatFileSize = (bytes) => {
+  const size = Number(bytes || 0);
+  if (!Number.isFinite(size) || size <= 0) return '크기 정보 없음';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(size < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+};
 const formatPriceChange = (value) => {
   if (value === null || value === undefined || value === '' || Number(value) === 0) return { text:'-', direction:'none' };
   const n = Number(value);
@@ -964,6 +972,7 @@ function DownloadPage({user,profile,downloads,reload,modVersion=DEFAULT_MOD_VERS
     await reload();
   }
   function doDownload(item){
+    if(!item?.file_data){ alert('다운로드 파일 데이터가 없습니다. 관리자에게 문의해주세요.'); return; }
     const a=document.createElement('a');
     a.href=item.file_data;
     a.download=item.file_name || item.title || 'download';
@@ -1018,9 +1027,13 @@ function DownloadPage({user,profile,downloads,reload,modVersion=DEFAULT_MOD_VERS
           <p className="mono">DOWNLOAD</p>
           <h2>{item.title}</h2>
           {item.description && <p className="muted">{item.description}</p>}
-          <div className="download-meta"><span>{item.file_name}</span><span>{new Date(item.created_at).toLocaleString('ko-KR')}</span></div>
+          <div className="download-meta">
+            <span>{item.file_name || '파일명 없음'}</span>
+            <span>{formatFileSize(item.file_size)}</span>
+            <span>{new Date(item.created_at).toLocaleString('ko-KR')}</span>
+          </div>
           <div className="download-author"><img src={actor.avatar} onError={e=>e.currentTarget.src=fallbackAvatar}/><span>{actor.name}</span></div>
-          <div className="download-actions"><button className="primary" onClick={()=>doDownload(item)}>다운로드</button>{isAdmin && <button className="notice-delete" onClick={()=>remove(item.id)}>삭제</button>}</div>
+          <div className="download-actions"><button className="primary" disabled={!item.file_data} onClick={()=>doDownload(item)}>다운로드</button>{isAdmin && <button className="notice-delete" onClick={()=>remove(item.id)}>삭제</button>}</div>
         </article>;
       }) : <article className="placeholder-card"><p className="mono">DOWNLOAD</p><h2>등록된 다운로드가 없습니다.</h2><p>관리자 계정으로 파일을 업로드하면 일반 유저가 다운로드할 수 있습니다.</p></article>}
     </div>
@@ -1063,7 +1076,7 @@ function ModVersionModal({user,version,onClose,reload}){
     <div className="modal-card notice-modal mod-version-modal">
       <div className="modal-head"><div><p className="mono">MOD VERSION</p><h2>모드 버전 정보 수정</h2></div><button onClick={onClose}>×</button></div>
       <div className="mod-version-form-grid">
-        <label className="notice-input">최신 버전<input value={form.latestVersion} onChange={e=>update('latestVersion',e.target.value)} placeholder="0.6.7"/></label>
+        <label className="notice-input">최신 버전<input value={form.latestVersion} onChange={e=>update('latestVersion',e.target.value)} placeholder="0.1.0"/></label>
         <label className="notice-input">지원 Minecraft 버전<input value={form.minecraftVersion} onChange={e=>update('minecraftVersion',e.target.value)} placeholder="1.21.4"/></label>
         <label className="notice-input">Fabric Loader<input value={form.fabricLoader} onChange={e=>update('fabricLoader',e.target.value)} placeholder="0.16.10+"/></label>
         <label className="notice-input">Fabric API<input value={form.fabricApi} onChange={e=>update('fabricApi',e.target.value)} placeholder="0.119.2+1.21.4"/></label>
@@ -1088,9 +1101,10 @@ function DownloadModal({user,onClose,reload}){
     return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(f); });
   }
   async function save(){
+    if(!isSupabaseConfigured){ setMessage('.env 파일에 Supabase 값을 넣어주세요.'); return; }
     if(!title.trim()){ setMessage('제목을 입력해주세요.'); return; }
     if(!file){ setMessage('파일을 선택해주세요.'); return; }
-    if(file.size > 8 * 1024 * 1024){ setMessage('베타에서는 8MB 이하 파일만 업로드할 수 있습니다.'); return; }
+    if(file.size > MAX_DOWNLOAD_BYTES){ setMessage(`베타에서는 ${formatFileSize(MAX_DOWNLOAD_BYTES)} 이하 파일만 업로드할 수 있습니다.`); return; }
     const fileData=await toDataURL(file);
     const {error}=await supabase.from('downloads').insert({
       title:title.trim(), description:description.trim(), file_name:file.name, file_type:file.type || 'application/octet-stream', file_size:file.size, file_data:fileData, created_by:user.id

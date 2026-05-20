@@ -68,8 +68,23 @@ export default async function handler(req, res) {
     const { data: knownRows, error: lookupError } = await lookupQuery;
     if (lookupError) throw lookupError;
 
-    const byKey = new Map((knownRows || []).map((row) => [row.item_key, row]));
-    const byName = new Map((knownRows || []).map((row) => [row.item_name, row]));
+    let allKnownRows = knownRows || [];
+    if (requestedKeys.length && requestedNames.length) {
+      const knownNames = new Set(allKnownRows.map((row) => row.item_name));
+      const missingNames = requestedNames.filter((name) => !knownNames.has(name));
+      if (missingNames.length) {
+        const { data: nameRows, error: nameLookupError } = await supabase
+          .from('market_prices')
+          .select('item_key,item_name,category,price,price_max,price_change')
+          .eq('category', category)
+          .in('item_name', missingNames);
+        if (nameLookupError) throw nameLookupError;
+        allKnownRows = [...allKnownRows, ...(nameRows || [])];
+      }
+    }
+
+    const byKey = new Map(allKnownRows.map((row) => [row.item_key, row]));
+    const byName = new Map(allKnownRows.map((row) => [row.item_name, row]));
 
     let reporterProfile = null;
     const minecraftId = cleanText(body.minecraftId, 16);
@@ -118,7 +133,11 @@ export default async function handler(req, res) {
         continue;
       }
 
-      if (Number(row.price || 0) !== price || (row.price_change ?? null) !== priceChange) {
+      const priceChanged = Number(row.price || 0) !== price;
+      const oldPriceChange = row.price_change === null || row.price_change === undefined ? null : Number(row.price_change);
+      const priceChangeChanged = oldPriceChange !== priceChange;
+
+      if (priceChanged || priceChangeChanged) {
         const { error: updateError } = await supabase
           .from('market_prices')
           .update({
@@ -154,7 +173,9 @@ export default async function handler(req, res) {
         itemName: row.item_name,
         oldPrice: Number(row.price || 0),
         newPrice: price,
-        changed: Number(row.price || 0) !== price,
+        changed: priceChanged || priceChangeChanged,
+        priceChanged,
+        priceChangeChanged,
         priceChange,
       });
     }

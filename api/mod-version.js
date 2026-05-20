@@ -3,12 +3,12 @@ import { getServerSupabase, sendJson } from './_supabase.js';
 const DEFAULT_MOD_VERSION = {
   ok: true,
   modId: 'ddingplug',
-  latestVersion: process.env.DDINGPLUG_MOD_LATEST_VERSION || '0.6.7',
+  latestVersion: process.env.DDINGPLUG_MOD_LATEST_VERSION || '0.1.0',
   minecraftVersion: process.env.DDINGPLUG_MOD_MINECRAFT_VERSION || '1.21.4',
   fabricLoader: process.env.DDINGPLUG_MOD_FABRIC_LOADER || '0.16.10+',
   fabricApi: process.env.DDINGPLUG_MOD_FABRIC_API || '0.119.2+1.21.4',
   downloadUrl: process.env.DDINGPLUG_MOD_DOWNLOAD_URL || 'https://ddingplug.vercel.app/download',
-  releaseNote: process.env.DDINGPLUG_MOD_RELEASE_NOTE || '업데이트 확인 UI 추가',
+  releaseNote: process.env.DDINGPLUG_MOD_RELEASE_NOTE || '공식 0.1.0 배포판',
   required: String(process.env.DDINGPLUG_MOD_REQUIRED || 'false').toLowerCase() === 'true'
 };
 

@@ -29,7 +29,7 @@ SUPABASE_ANON_KEY=Supabase anon key
 SUPABASE_SERVICE_ROLE_KEY=Supabase service role key
 DDINGPLUG_MOD_API_KEY=충분히 긴 랜덤 문자열
 DDINGPLUG_ALLOWED_ORIGIN=https://배포도메인
-DDINGPLUG_MOD_LATEST_VERSION=0.6.7
+DDINGPLUG_MOD_LATEST_VERSION=0.1.0
 DDINGPLUG_MOD_DOWNLOAD_URL=https://ddingplug.vercel.app/download
 ```
 
@@ -83,12 +83,12 @@ GET /api/mod-version
 {
   "ok": true,
   "modId": "ddingplug",
-  "latestVersion": "0.6.7",
+  "latestVersion": "0.1.0",
   "minecraftVersion": "1.21.4",
   "fabricLoader": "0.16.10+",
   "fabricApi": "0.119.2+1.21.4",
   "downloadUrl": "https://ddingplug.vercel.app/download",
-  "releaseNote": "업데이트 확인 UI 추가",
+  "releaseNote": "공식 0.1.0 배포판",
   "required": false
 }
 ```
@@ -176,7 +176,9 @@ Content-Type: application/json
       "itemName": "조개껍데기 브로치",
       "oldPrice": 50000,
       "newPrice": 40624,
-      "changed": true
+      "changed": true,
+      "priceChanged": true,
+      "priceChangeChanged": false
     }
   ],
   "rejected": []
