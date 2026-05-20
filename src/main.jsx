@@ -610,6 +610,10 @@ function Topbar({current,user,profile,logout,theme,setTheme}){
       </button>
       {profileOpen && <div className="profile-dropdown">
         <p className="dropdown-label">내 계정 정보</p>
+        <button className="dropdown-theme-action" onClick={()=>{setTheme(nextTheme); setProfileOpen(false);}}>
+          <span className="theme-toggle-dot" aria-hidden="true"></span>
+          <span>{nextTheme === 'dark' ? '다크 모드로 변경' : '라이트 모드로 변경'}</span>
+        </button>
         <button onClick={()=>{go('#/profile'); setProfileOpen(false);}}>내 프로필</button>
         {isAdmin && <button onClick={()=>{go('#/admin'); setProfileOpen(false);}}>관리자 로그</button>}
         <button className="danger" onClick={logout}>로그아웃</button>
