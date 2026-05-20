@@ -963,6 +963,7 @@ function DownloadPage({user,profile,downloads,reload,modVersion=DEFAULT_MOD_VERS
   const isAdmin = ['owner','admin'].includes(profile?.role);
   const [open,setOpen]=useState(false);
   const [versionOpen,setVersionOpen]=useState(false);
+  const [detailItem,setDetailItem]=useState(null);
   const version = normalizeModVersion(modVersion);
   async function remove(id){
     if(!isAdmin) return;
@@ -1023,23 +1024,53 @@ function DownloadPage({user,profile,downloads,reload,modVersion=DEFAULT_MOD_VERS
     <div className="download-grid">
       {downloads.length ? downloads.map(item=>{
         const actor=getLogActor({profiles:item.profiles});
+        const description = (item.description || '').trim();
+        const preview = description.length > 110 ? `${description.slice(0,110).trim()}...` : description;
         return <article className="download-card" key={item.id}>
           <p className="mono">DOWNLOAD</p>
           <h2>{item.title}</h2>
-          {item.description && <p className="muted">{item.description}</p>}
+          {description && <p className="download-summary">{preview}</p>}
           <div className="download-meta">
             <span>{item.file_name || '파일명 없음'}</span>
             <span>{formatFileSize(item.file_size)}</span>
             <span>{new Date(item.created_at).toLocaleString('ko-KR')}</span>
           </div>
           <div className="download-author"><img src={actor.avatar} onError={e=>e.currentTarget.src=fallbackAvatar}/><span>{actor.name}</span></div>
-          <div className="download-actions"><button className="primary" disabled={!item.file_data} onClick={()=>doDownload(item)}>다운로드</button>{isAdmin && <button className="notice-delete" onClick={()=>remove(item.id)}>삭제</button>}</div>
+          <div className="download-actions">
+            <button className="primary" disabled={!item.file_data} onClick={()=>doDownload(item)}>다운로드</button>
+            {description && <button className="ghost" onClick={()=>setDetailItem(item)}>상세 보기</button>}
+            {isAdmin && <button className="notice-delete" onClick={()=>remove(item.id)}>삭제</button>}
+          </div>
         </article>;
       }) : <article className="placeholder-card"><p className="mono">DOWNLOAD</p><h2>등록된 다운로드가 없습니다.</h2><p>관리자 계정으로 파일을 업로드하면 일반 유저가 다운로드할 수 있습니다.</p></article>}
     </div>
     {open && <DownloadModal user={user} onClose={()=>setOpen(false)} reload={reload}/>} 
     {versionOpen && <ModVersionModal user={user} version={version} onClose={()=>setVersionOpen(false)} reload={reloadModVersion}/>} 
+    {detailItem && <DownloadDetailModal item={detailItem} onClose={()=>setDetailItem(null)} onDownload={()=>doDownload(detailItem)} />} 
   </section>;
+}
+function DownloadDetailModal({item,onClose,onDownload}){
+  const description = (item?.description || '').trim();
+  return <div className="modal-backdrop" role="dialog" aria-modal="true">
+    <div className="modal-card download-detail-modal">
+      <div className="modal-head">
+        <div><p className="mono">DOWNLOAD DETAIL</p><h2>{item?.title || '다운로드 상세'}</h2></div>
+        <button onClick={onClose}>×</button>
+      </div>
+      <div className="download-detail-meta">
+        <span>{item?.file_name || '파일명 없음'}</span>
+        <span>{formatFileSize(item?.file_size)}</span>
+        <span>{item?.created_at ? new Date(item.created_at).toLocaleString('ko-KR') : '등록일 없음'}</span>
+      </div>
+      <div className="download-detail-body">
+        {description ? <p>{description}</p> : <p className="muted">등록된 설명이 없습니다.</p>}
+      </div>
+      <div className="modal-actions">
+        <button className="ghost" onClick={onClose}>닫기</button>
+        <button className="primary" disabled={!item?.file_data} onClick={onDownload}>다운로드</button>
+      </div>
+    </div>
+  </div>;
 }
 function ModVersionModal({user,version,onClose,reload}){
   const [form,setForm]=useState(()=>normalizeModVersion(version));

@@ -785,14 +785,63 @@ img[src=''], img:not([src]) { display: none !important; }
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 250px;
 }
 .download-card h2 { font-family: var(--ff-display); font-size: 18px; font-weight: 800; margin: 3px 0 0; }
+.download-summary {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .download-meta { display: flex; gap: 8px; flex-wrap: wrap; }
 .download-meta span { font-family: var(--ff-mono); font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft); border-radius: 999px; padding: 3px 9px; }
 .download-author { display: flex; align-items: center; gap: 8px; }
 .download-author img { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; }
 .download-author span { font-size: 13px; color: var(--muted); }
-.download-actions { display: flex; gap: 8px; margin-top: auto; }
+.download-actions { display: flex; gap: 8px; margin-top: auto; flex-wrap: wrap; }
+
+.download-detail-modal {
+  width: min(720px, calc(100vw - 32px));
+}
+.download-detail-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 14px;
+}
+.download-detail-meta span {
+  padding: 6px 10px;
+  border: 1px solid rgba(91,119,77,0.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.48);
+  color: var(--text-2);
+  font-family: var(--ff-mono);
+  font-size: 12px;
+}
+.download-detail-body {
+  max-height: min(52vh, 520px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(91,119,77,0.14);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.38);
+}
+.download-detail-body p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
 
 .mod-download-hero {
   display: grid;
@@ -2309,6 +2358,8 @@ html[data-theme="dark"] .hub-shortcut,
 html[data-theme="dark"] .recipe-card,
 html[data-theme="dark"] .craft-result-card,
 html[data-theme="dark"] .download-meta span,
+html[data-theme="dark"] .download-detail-meta span,
+html[data-theme="dark"] .download-detail-body,
 html[data-theme="dark"] .mod-version-meta span {
   border-color: rgba(235,226,190,0.12) !important;
   background: rgba(246,240,220,0.06) !important;
