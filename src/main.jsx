@@ -887,8 +887,8 @@ function AdminLogRow({log}){
   const actor = getLogActor(log);
   return <div className="admin-log-row">
     <div className="admin-actor"><img src={actor.avatar} onError={e=>e.currentTarget.src=fallbackAvatar}/><b>{actor.name}</b></div>
-    <div><b>{log.item_name}</b><span>{categoryLabel(log.category)}</span></div>
-    <strong>{Number(log.old_price || 0).toLocaleString()} G → {Number(log.new_price || 0).toLocaleString()} G</strong>
+    <div className="admin-log-item"><b>{log.item_name || '전체 시세'}</b><span>{categoryLabel(log.category)}</span></div>
+    <strong className="admin-log-change">{Number(log.old_price || 0).toLocaleString()} G → {Number(log.new_price || 0).toLocaleString()} G</strong>
     <time>{new Date(log.created_at).toLocaleString('ko-KR')}</time>
   </div>;
 }

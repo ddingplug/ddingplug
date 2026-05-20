@@ -1057,9 +1057,78 @@ img[src=''], img:not([src]) { display: none !important; }
    ADMIN PAGE
    ================================================================ */
 .admin-page { max-width: 1280px; margin: 0 auto; }
-.admin-log-card { border-radius: 18px !important; padding: 20px; }
-.admin-log-row { display: grid; gap: 8px; }
-.admin-log-row strong { font-family: var(--ff-mono); white-space: normal; overflow: visible; text-overflow: clip; word-break: keep-all; }
+.admin-log-card { border-radius: 18px !important; padding: 20px; overflow: hidden; }
+.admin-log-head,
+.admin-log-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.05fr) minmax(190px, 1.2fr) minmax(170px, .85fr) minmax(180px, .9fr);
+  gap: 14px;
+  align-items: center;
+}
+.admin-log-head {
+  padding: 0 4px 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.admin-log-head span {
+  color: var(--muted);
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  font-weight: 800;
+}
+.admin-log-list { display: grid; gap: 0; }
+.admin-log-row {
+  min-height: 74px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.admin-log-row:last-child { border-bottom: 0; }
+.admin-actor {
+  display: grid;
+  grid-template-columns: 42px minmax(0,1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+.admin-actor img {
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  object-fit: cover;
+  image-rendering: pixelated;
+  background: rgba(0,0,0,0.18);
+}
+.admin-actor b,
+.admin-log-item b {
+  min-width: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-log-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.admin-log-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.admin-log-change {
+  color: var(--text);
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.admin-log-row time {
+  color: var(--text-2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.admin-empty { padding: 16px 4px 0; }
 .admin-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .admin-title-actions {
   display: flex;
@@ -1643,6 +1712,16 @@ textarea:focus-visible {
 
 @media (max-width: 980px) {
   .market-summary-row { grid-template-columns: 1fr 1fr; }
+  .admin-log-head { display: none; }
+  .admin-log-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+  .admin-log-change,
+  .admin-log-row time {
+    white-space: normal;
+  }
 }
 
 @media (max-width: 760px) {
