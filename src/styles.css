@@ -4400,3 +4400,511 @@ html[data-theme="dark"] .admin-file-row {
     line-height: 1.65;
   }
 }
+
+/* ================================================================
+   V14 PRODUCT UI PASS
+   ================================================================ */
+:root {
+  --ui-radius: 8px;
+  --ui-radius-lg: 12px;
+  --ui-shadow: 0 18px 46px rgba(61, 88, 68, 0.12);
+  --ui-shadow-soft: 0 10px 26px rgba(61, 88, 68, 0.09);
+  --ui-panel: rgba(255, 253, 244, 0.92);
+  --ui-panel-strong: rgba(255, 255, 250, 0.96);
+  --ui-subtle: rgba(255, 255, 255, 0.52);
+  --ui-accent-blue: #3d8fae;
+}
+
+body {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.2) 260px, transparent),
+    radial-gradient(circle at 11% 14%, rgba(117,184,124,0.24) 0 74px, transparent 76px),
+    radial-gradient(circle at 88% 9%, rgba(61,143,174,0.2) 0 96px, transparent 98px),
+    linear-gradient(135deg, #edf7e8, #f8f1d6 46%, #e3f3f1);
+}
+
+.plug-shell {
+  padding-top: 18px;
+}
+
+.plug-main {
+  max-width: 1240px;
+}
+
+.topbar:not(.public-topbar) {
+  max-width: 1240px;
+  min-height: 64px;
+  height: auto;
+  padding: 10px 12px;
+  gap: 10px;
+  border: 1px solid rgba(83, 117, 78, 0.2);
+  border-radius: var(--ui-radius-lg) !important;
+  background: rgba(255, 253, 246, 0.92);
+  box-shadow: var(--ui-shadow-soft), inset 0 -1px 0 rgba(83,117,78,0.08);
+}
+
+.brand {
+  min-width: 122px;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.topnav {
+  gap: 6px;
+}
+
+.topnav > button,
+.topnav .market-nav > button {
+  min-height: 40px;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius) !important;
+  background: rgba(39, 57, 41, 0.045);
+  color: var(--text-2);
+  font-weight: 900;
+}
+
+.topnav button:hover {
+  border-color: rgba(69,182,109,0.22);
+  background: rgba(69,182,109,0.08);
+  color: var(--text);
+}
+
+.topnav button.active {
+  border-color: rgba(69,182,109,0.34);
+  background: rgba(69,182,109,0.14);
+  color: #22744a;
+  box-shadow: none;
+}
+
+.profile-menu {
+  min-width: 0;
+}
+
+.top-user {
+  height: 44px;
+  border-radius: var(--ui-radius) !important;
+  background: rgba(39, 57, 41, 0.045);
+}
+
+.profile-dropdown,
+.market-subnav {
+  border-radius: var(--ui-radius-lg) !important;
+}
+
+.page-title,
+.compact-page-header,
+.ocean-title.compact-title {
+  margin-bottom: 18px !important;
+  padding: 24px !important;
+  border: 1px solid rgba(83,117,78,0.18) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  background:
+    linear-gradient(135deg, rgba(255,255,250,0.94), rgba(241,250,235,0.9)) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+.page-title h1,
+.compact-page-header h1,
+.ocean-title h1 {
+  margin-bottom: 8px !important;
+  color: #235c3e;
+  font-size: clamp(30px, 3vw, 42px) !important;
+  line-height: 1.08 !important;
+}
+
+.page-title p,
+.compact-page-header p,
+.ocean-title p {
+  max-width: 860px;
+  color: #66715e !important;
+}
+
+.mono {
+  margin-bottom: 8px;
+  color: #4d8a5c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.filterbar span,
+.status-pill,
+.maintenance-badge,
+.download-meta span,
+.mod-version-meta span,
+.ratio {
+  border-radius: var(--ui-radius) !important;
+}
+
+.market-board,
+.panel-card,
+.modal-card,
+.notice-card,
+.download-card,
+.privacy-card,
+.admin-log-card,
+.admin-status-card,
+.admin-command-card,
+.admin-side-card,
+.ocean-card.compact-card,
+.placeholder-card,
+.profile-form,
+.market-card,
+.mod-download-hero,
+.notice-strip {
+  border: 1px solid rgba(83,117,78,0.16) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  background: var(--ui-panel) !important;
+  box-shadow: var(--ui-shadow-soft) !important;
+}
+
+.market-board,
+.panel-card,
+.privacy-card,
+.download-card,
+.notice-card,
+.admin-log-card,
+.ocean-card.compact-card,
+.profile-form,
+.market-card {
+  padding: 22px !important;
+}
+
+.board-head,
+.admin-side-head,
+.modal-head {
+  border-bottom: 1px solid rgba(83,117,78,0.12);
+  padding-bottom: 14px;
+}
+
+.board-head h2,
+.admin-side-head h2,
+.notice-card h2,
+.download-card h2,
+.privacy-card h2,
+.profile-form h2,
+.ocean-section-head.compact h2,
+.hub-summary-main h2,
+.ocean-action-card h2 {
+  color: #23472f;
+  line-height: 1.18;
+}
+
+.primary,
+.edit-badge,
+.hub-primary-action {
+  min-height: 42px;
+  border-radius: var(--ui-radius) !important;
+  background: linear-gradient(135deg, #62d587, #2eae64) !important;
+  color: #082113 !important;
+  box-shadow: 0 10px 22px rgba(46,174,100,0.2) !important;
+  font-weight: 900;
+}
+
+.primary:hover,
+.edit-badge:hover,
+.hub-primary-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(46,174,100,0.25) !important;
+}
+
+.ghost,
+.ghost-pill,
+.secondary-edit,
+.notice-strip button,
+.footer-links button {
+  min-height: 40px;
+  border: 1px solid rgba(83,117,78,0.18) !important;
+  border-radius: var(--ui-radius) !important;
+  background: rgba(255,255,255,0.54) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+  font-weight: 900;
+}
+
+.ghost:hover,
+.ghost-pill:hover,
+.secondary-edit:hover,
+.notice-strip button:hover,
+.footer-links button:hover {
+  border-color: rgba(69,182,109,0.32) !important;
+  background: rgba(69,182,109,0.08) !important;
+}
+
+.notice-input input,
+.notice-input textarea,
+.profile-form input,
+.bulk-row input,
+.calc-field input,
+.calc-field select,
+.recipe-controls input,
+.recipe-controls select,
+.compact-inputs input,
+.compact-inputs select {
+  min-height: 42px;
+  border: 1px solid rgba(83,117,78,0.18) !important;
+  border-radius: var(--ui-radius) !important;
+  background: rgba(255,255,255,0.7) !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+}
+
+.price-list {
+  gap: 10px;
+}
+
+.price-row {
+  min-height: 70px;
+  border: 1px solid rgba(83,117,78,0.12) !important;
+  border-radius: var(--ui-radius) !important;
+  background: var(--ui-panel-strong) !important;
+}
+
+.price-row:hover {
+  border-color: rgba(69,182,109,0.26) !important;
+  background: #ffffff !important;
+}
+
+.price-row.high {
+  border-color: rgba(69,182,109,0.28) !important;
+  background: linear-gradient(90deg, rgba(69,182,109,0.13), rgba(255,255,250,0.96)) !important;
+}
+
+.price-row.low {
+  border-color: rgba(223,107,100,0.24) !important;
+  background: linear-gradient(90deg, rgba(223,107,100,0.1), rgba(255,255,250,0.96)) !important;
+}
+
+.row-icon {
+  border-radius: var(--ui-radius) !important;
+  background: rgba(39,57,41,0.055);
+}
+
+.market-summary-row {
+  gap: 12px;
+}
+
+.market-summary-row div,
+.recent-category,
+.feature-lock-card,
+.feature-lock-row,
+.admin-file-row,
+.spec-card,
+.ocean-metric-card,
+.ocean-flow-card > div,
+.ocean-action-row,
+.hub-shortcut,
+.recipe-card,
+.craft-result-card,
+.download-detail-body,
+.legal-summary-strip article {
+  border: 1px solid rgba(83,117,78,0.14) !important;
+  border-radius: var(--ui-radius) !important;
+  background: rgba(255,255,255,0.56) !important;
+}
+
+.market-summary-row b,
+.admin-status-card b,
+.ocean-metric-card b,
+.market-price-value {
+  color: #233b29;
+}
+
+.download-grid,
+.notice-list,
+.admin-overview-grid,
+.admin-command-grid,
+.admin-workspace-grid,
+.profile-grid,
+.mod-guide-grid,
+.policy-grid {
+  gap: 16px !important;
+}
+
+.download-card,
+.notice-card {
+  transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+
+.download-card:hover,
+.notice-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(69,182,109,0.28) !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.ocean-tabbar-v3 {
+  border-radius: var(--ui-radius-lg) !important;
+  background: rgba(255,255,255,0.55) !important;
+}
+
+.ocean-tabs-compact button {
+  border-radius: var(--ui-radius) !important;
+}
+
+.ocean-tabs-compact button.active {
+  border-color: rgba(69,182,109,0.34) !important;
+  background: rgba(69,182,109,0.13) !important;
+  color: #22744a !important;
+}
+
+.site-footer {
+  max-width: 1240px;
+  color: #6f7868;
+}
+
+html[data-theme="dark"] {
+  --ui-shadow: 0 18px 46px rgba(0,0,0,0.26);
+  --ui-shadow-soft: 0 12px 30px rgba(0,0,0,0.22);
+  --ui-panel: rgba(28, 39, 29, 0.92);
+  --ui-panel-strong: rgba(32, 44, 33, 0.96);
+  --ui-subtle: rgba(246,240,220,0.055);
+  --ui-accent-blue: #7bc4dc;
+}
+
+html[data-theme="dark"] .topbar:not(.public-topbar),
+html[data-theme="dark"] .page-title,
+html[data-theme="dark"] .compact-page-header,
+html[data-theme="dark"] .ocean-title.compact-title {
+  border-color: rgba(235,226,190,0.14) !important;
+  background: rgba(28,39,29,0.9) !important;
+}
+
+html[data-theme="dark"] .page-title h1,
+html[data-theme="dark"] .compact-page-header h1,
+html[data-theme="dark"] .ocean-title h1,
+html[data-theme="dark"] .board-head h2,
+html[data-theme="dark"] .admin-side-head h2,
+html[data-theme="dark"] .notice-card h2,
+html[data-theme="dark"] .download-card h2,
+html[data-theme="dark"] .privacy-card h2,
+html[data-theme="dark"] .profile-form h2,
+html[data-theme="dark"] .ocean-section-head.compact h2,
+html[data-theme="dark"] .hub-summary-main h2,
+html[data-theme="dark"] .ocean-action-card h2 {
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .page-title p,
+html[data-theme="dark"] .compact-page-header p,
+html[data-theme="dark"] .ocean-title p {
+  color: var(--text-2) !important;
+}
+
+html[data-theme="dark"] .market-board,
+html[data-theme="dark"] .panel-card,
+html[data-theme="dark"] .modal-card,
+html[data-theme="dark"] .notice-card,
+html[data-theme="dark"] .download-card,
+html[data-theme="dark"] .privacy-card,
+html[data-theme="dark"] .admin-log-card,
+html[data-theme="dark"] .admin-status-card,
+html[data-theme="dark"] .admin-command-card,
+html[data-theme="dark"] .admin-side-card,
+html[data-theme="dark"] .ocean-card.compact-card,
+html[data-theme="dark"] .placeholder-card,
+html[data-theme="dark"] .profile-form,
+html[data-theme="dark"] .market-card,
+html[data-theme="dark"] .mod-download-hero,
+html[data-theme="dark"] .notice-strip {
+  border-color: rgba(235,226,190,0.13) !important;
+  background: var(--ui-panel) !important;
+}
+
+html[data-theme="dark"] .price-row,
+html[data-theme="dark"] .market-summary-row div,
+html[data-theme="dark"] .recent-category,
+html[data-theme="dark"] .feature-lock-card,
+html[data-theme="dark"] .feature-lock-row,
+html[data-theme="dark"] .admin-file-row,
+html[data-theme="dark"] .spec-card,
+html[data-theme="dark"] .ocean-metric-card,
+html[data-theme="dark"] .ocean-flow-card > div,
+html[data-theme="dark"] .ocean-action-row,
+html[data-theme="dark"] .hub-shortcut,
+html[data-theme="dark"] .recipe-card,
+html[data-theme="dark"] .craft-result-card,
+html[data-theme="dark"] .download-detail-body,
+html[data-theme="dark"] .legal-summary-strip article {
+  border-color: rgba(235,226,190,0.12) !important;
+  background: rgba(246,240,220,0.055) !important;
+}
+
+html[data-theme="dark"] .price-row:hover {
+  background: rgba(246,240,220,0.08) !important;
+}
+
+html[data-theme="dark"] .market-summary-row b,
+html[data-theme="dark"] .admin-status-card b,
+html[data-theme="dark"] .ocean-metric-card b,
+html[data-theme="dark"] .market-price-value {
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .ghost,
+html[data-theme="dark"] .ghost-pill,
+html[data-theme="dark"] .secondary-edit,
+html[data-theme="dark"] .notice-strip button,
+html[data-theme="dark"] .footer-links button,
+html[data-theme="dark"] .topnav > button,
+html[data-theme="dark"] .topnav .market-nav > button,
+html[data-theme="dark"] .top-user {
+  background: rgba(246,240,220,0.055) !important;
+  color: var(--text-2) !important;
+  border-color: rgba(235,226,190,0.13) !important;
+}
+
+html[data-theme="dark"] .notice-input input,
+html[data-theme="dark"] .notice-input textarea,
+html[data-theme="dark"] .profile-form input,
+html[data-theme="dark"] .bulk-row input,
+html[data-theme="dark"] .calc-field input,
+html[data-theme="dark"] .calc-field select,
+html[data-theme="dark"] .recipe-controls input,
+html[data-theme="dark"] .recipe-controls select,
+html[data-theme="dark"] .compact-inputs input,
+html[data-theme="dark"] .compact-inputs select {
+  background: rgba(246,240,220,0.065) !important;
+  color: var(--text) !important;
+  border-color: rgba(235,226,190,0.14) !important;
+}
+
+@media (max-width: 980px) {
+  .page-title,
+  .compact-page-header,
+  .ocean-title.compact-title {
+    padding: 20px !important;
+  }
+
+  .market-board,
+  .panel-card,
+  .privacy-card,
+  .download-card,
+  .notice-card,
+  .admin-log-card,
+  .ocean-card.compact-card,
+  .profile-form,
+  .market-card {
+    padding: 18px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar:not(.public-topbar) {
+    padding: 10px !important;
+  }
+
+  .topbar:not(.public-topbar) .topnav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .page-title h1,
+  .compact-page-header h1,
+  .ocean-title h1 {
+    font-size: 30px !important;
+  }
+
+  .row-right.read-only {
+    gap: 8px;
+  }
+}
