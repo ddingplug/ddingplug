@@ -1734,6 +1734,7 @@ function OceanSpecSidebar({settings,setSettings}){
   const result=oceanStaminaResult(settings);
   const [open,setOpen]=useState(false);
   const set=(k,v)=>setSettings(s=>({...s,[k]:Number(v)||0}));
+  const applyPreset=(preset)=>setSettings(s=>({...s,...preset}));
   const v=getOceanSkillValues(settings);
   const active=oceanEffectList(settings).filter(x=>!/(미적용|\+0%|0%$|Lv\. 0)/.test(String(x.value))).slice(0,5);
   return <aside className={`ocean-spec-sidebar v21 ${open?'open':''}`}>
@@ -1741,7 +1742,7 @@ function OceanSpecSidebar({settings,setSettings}){
     <div className="ocean-spec-body">
       <div className="spec-save"><span className="pulse-dot"></span>{isSupabaseConfigured ? '자동 저장됨' : '로컬 저장'}</div>
       <div className="spec-card main compact-spec">
-        <p className="mono">CALC BASIS</p><h3>계산 기준</h3>
+        <div className="spec-card-head"><div><p className="mono">CALC BASIS</p><h3>계산 기준</h3></div><span>실시간 반영</span></div>
         <div className="spec-mini-grid compact">
           <div><span>스태미나</span><b>{Number(settings.stamina||0).toLocaleString()}</b></div>
           <div><span>어획</span><b>{result.count.toLocaleString()}회</b></div>
@@ -1750,8 +1751,13 @@ function OceanSpecSidebar({settings,setSettings}){
         </div>
         <div className="active-effect-list compact">{active.length ? active.map(x=><span key={x.name}>{x.name} {x.value}</span>) : <span>전문가 효과 기본값</span>}</div>
       </div>
+      <div className="ocean-preset-row">
+        <button onClick={()=>applyPreset({stamina:500})}>가볍게</button>
+        <button onClick={()=>applyPreset({stamina:1000})}>기본</button>
+        <button onClick={()=>applyPreset({stamina:1500})}>집중</button>
+      </div>
       <div className="spec-card compact-inputs">
-        <h4>자주 쓰는 설정</h4>
+        <div className="spec-form-title"><h4>자주 쓰는 설정</h4><span>핵심값만 먼저</span></div>
         <NumField label="오늘 사용할 스태미나" value={settings.stamina} onChange={v=>set('stamina',v)}/>
         <SelectField label="세이지 낚싯대 강화" value={settings.rodLevel} max={15} suffix="강" onChange={v=>set('rodLevel',v)}/>
         <SelectField label="제작 시간 감소" value={settings.skillFurnace} max={5} onChange={v=>set('skillFurnace',v)}/>
@@ -1779,6 +1785,7 @@ function OceanHubV3({settings,prices}){
   const daily=summary.daily;
   const issues=summary.issues||[];
   const top=summary.top;
+  const topRoute=top ? '#/ocean-alchemy' : '#/ocean-recipes';
   const metrics=[
     ['예상 어패류', formatOceanQty(daily.total), '오늘 스태미나 기준'],
     ['어획 횟수', `${daily.count.toLocaleString()}회`, `스태미나 ${Number(settings.stamina||0).toLocaleString()}`],
@@ -1799,9 +1806,17 @@ function OceanHubV3({settings,prices}){
         <h2>오늘 해양 작업 요약</h2>
         <p className="muted">세이지 낚싯대 +{settings.rodLevel} · {oceanModeLabel(settings.alchemyMode)} · 모든 계산은 왼쪽 계산 기준을 즉시 반영합니다.</p>
       </div>
-      {issues.length ? <div className="hub-alert">{issues[0]}{issues.length>1?` 외 ${issues.length-1}건`:''}</div> : <div className="hub-ok">필수 데이터 확인됨</div>}
+      <div className="hub-status-stack">
+        {issues.length ? <div className="hub-alert">{issues[0]}{issues.length>1?` 외 ${issues.length-1}건`:''}</div> : <div className="hub-ok">필수 데이터 확인됨</div>}
+        <button className="hub-primary-action" onClick={()=>go(topRoute)}>{top ? '추천 연금 확인' : '조합법 확인'}</button>
+      </div>
     </article>
     <div className="ocean-metric-grid">{metrics.map(([title,value,desc])=><div key={title} className="ocean-metric-card"><span>{title}</span><b>{value}</b><small>{desc}</small></div>)}</div>
+    <article className="ocean-card compact-card ocean-flow-card">
+      <div><span>1</span><b>스태미나 입력</b><small>오늘 사용할 양만 먼저 정합니다.</small></div>
+      <div><span>2</span><b>하루 수익 확인</b><small>어패류와 조개 기대값을 봅니다.</small></div>
+      <div><span>3</span><b>연금·공예 판단</b><small>현재 시세 기준 추천만 고릅니다.</small></div>
+    </article>
     <article className="ocean-card compact-card ocean-action-card">
       <div className="board-head compact"><div><h2>추천 작업</h2><p>현재 설정과 시세 기준으로 먼저 확인할 항목입니다.</p></div></div>
       <div className="ocean-action-list">{summary.actions.map(action=><button key={action.title} className={`ocean-action-row ${action.tone || ''}`} onClick={()=>go(action.tone==='good'?'#/ocean-alchemy':action.tone==='warn'?'#/ocean-craft':'#/ocean-stamina')}><b>{action.title}</b><span>{action.desc}</span></button>)}</div>
