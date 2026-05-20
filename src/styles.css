@@ -1451,11 +1451,6 @@ img[src=''], img:not([src]) { display: none !important; }
   font-size: 12px;
   line-height: 1.2;
 }
-.ocean-preset-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 7px;
-}
 .ocean-settings-drawer {
   display: grid;
   grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
@@ -1465,20 +1460,6 @@ img[src=''], img:not([src]) { display: none !important; }
 .ocean-settings-drawer .spec-details,
 .ocean-settings-drawer .mini-muted {
   grid-column: 1 / -1;
-}
-.ocean-preset-row button {
-  height: 36px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.04);
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 900;
-}
-.ocean-preset-row button:hover {
-  color: var(--mint);
-  border-color: rgba(57,217,138,0.26);
-  background: rgba(57,217,138,0.08);
 }
 .compact-inputs {
   display: grid;
@@ -4906,5 +4887,502 @@ html[data-theme="dark"] .compact-inputs select {
 
   .row-right.read-only {
     gap: 8px;
+  }
+}
+
+/* ================================================================
+   V15 OCEAN EXPERT STABILITY PASS
+   ================================================================ */
+.ocean-workstation.ocean-ux-v21,
+.ocean-console.v21,
+.ocean-console-main,
+.ocean-spec-sidebar.v21,
+.ocean-card.compact-card,
+.alchemy-input-card,
+.alchemy-result-card,
+.recipe-book,
+.recipe-list {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.ocean-console.v21 {
+  display: grid;
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+}
+
+.ocean-tabbar-v3.ocean-tabs-compact {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px !important;
+  margin-bottom: 14px;
+  border: 1px solid rgba(83,117,78,0.14) !important;
+  border-radius: var(--ui-radius-lg) !important;
+  background: rgba(255,255,255,0.48) !important;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ocean-tabbar-v3.ocean-tabs-compact::-webkit-scrollbar,
+.seafood-table-wrap.compact-v24::-webkit-scrollbar {
+  height: 8px;
+}
+
+.ocean-tabbar-v3.ocean-tabs-compact::-webkit-scrollbar-thumb,
+.seafood-table-wrap.compact-v24::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(83,117,78,0.32);
+}
+
+.ocean-tabs-compact button {
+  flex: 0 0 auto;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 3px;
+  min-width: 136px !important;
+  max-width: 190px;
+  min-height: 56px;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(83,117,78,0.14) !important;
+  border-radius: var(--ui-radius) !important;
+  background: rgba(255,255,255,0.38) !important;
+  color: var(--text) !important;
+  text-align: left;
+  scroll-snap-align: start;
+}
+
+.ocean-tabs-compact button b,
+.ocean-tabs-compact button span {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.ocean-tabs-compact button span {
+  color: var(--text-2);
+  font-size: 11px;
+}
+
+.ocean-tabs-compact button.active {
+  border-color: rgba(69,182,109,0.36) !important;
+  background: rgba(69,182,109,0.14) !important;
+  color: #22744a !important;
+  box-shadow: inset 0 0 0 2px rgba(69,182,109,0.13);
+}
+
+html[data-theme="dark"] .ocean-tabbar-v3.ocean-tabs-compact {
+  border-color: rgba(235,226,190,0.13) !important;
+  background: rgba(246,240,220,0.055) !important;
+}
+
+html[data-theme="dark"] .ocean-tabs-compact button {
+  border-color: rgba(235,226,190,0.12) !important;
+  background: rgba(246,240,220,0.045) !important;
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .ocean-tabs-compact button span {
+  color: var(--text-2) !important;
+}
+
+html[data-theme="dark"] .ocean-tabs-compact button.active {
+  border-color: rgba(125,225,151,0.35) !important;
+  background: rgba(125,225,151,0.13) !important;
+  color: #a9efb8 !important;
+}
+
+.ocean-settings-drawer {
+  display: grid;
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+  align-items: stretch;
+}
+
+.compact-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  gap: 12px !important;
+  align-items: end;
+}
+
+.compact-inputs .spec-form-title,
+.compact-inputs .stamina-control {
+  grid-column: 1 / -1;
+}
+
+.compact-inputs .calc-field,
+.form-grid.two .calc-field,
+.single-option .calc-field {
+  min-width: 0;
+}
+
+.stamina-control {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(83,117,78,0.14);
+  border-radius: var(--ui-radius);
+  background: rgba(255,255,255,0.36);
+}
+
+.stamina-control-head,
+.stamina-scale {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stamina-control-head span,
+.stamina-scale span {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.stamina-control-head b {
+  color: var(--text);
+  font-family: var(--ff-mono);
+  font-size: 24px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.stamina-number {
+  width: 100%;
+  min-width: 0;
+  text-align: right;
+}
+
+.stamina-range {
+  width: 100%;
+  min-height: 34px !important;
+  height: 34px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.stamina-range::-webkit-slider-runnable-track {
+  height: 12px;
+  border: 1px solid rgba(83,117,78,0.18);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #62d587 var(--stamina-fill), rgba(83,117,78,0.15) var(--stamina-fill));
+}
+
+.stamina-range::-webkit-slider-thumb {
+  width: 26px;
+  height: 26px;
+  margin-top: -8px;
+  border: 3px solid #f5f0df;
+  border-radius: 50%;
+  background: #2eae64;
+  box-shadow: 0 8px 18px rgba(46,174,100,0.25);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.stamina-range::-moz-range-track {
+  height: 12px;
+  border: 1px solid rgba(83,117,78,0.18);
+  border-radius: 999px;
+  background: rgba(83,117,78,0.15);
+}
+
+.stamina-range::-moz-range-progress {
+  height: 12px;
+  border-radius: 999px;
+  background: #62d587;
+}
+
+.stamina-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #f5f0df;
+  border-radius: 50%;
+  background: #2eae64;
+  box-shadow: 0 8px 18px rgba(46,174,100,0.25);
+}
+
+html[data-theme="dark"] .stamina-control {
+  border-color: rgba(235,226,190,0.12);
+  background: rgba(246,240,220,0.055);
+}
+
+html[data-theme="dark"] .stamina-range::-webkit-slider-runnable-track {
+  border-color: rgba(235,226,190,0.13);
+  background: linear-gradient(90deg, #7de197 var(--stamina-fill), rgba(246,240,220,0.12) var(--stamina-fill));
+}
+
+.ocean-calc-layout.v21,
+.alchemy-ux.v21 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(320px,.78fr) !important;
+  gap: 16px !important;
+  align-items: start;
+}
+
+.alchemy-result-card {
+  position: sticky;
+  top: 96px;
+}
+
+.result-grid.compact,
+.ocean-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 10px;
+}
+
+.form-grid.two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  gap: 12px;
+}
+
+.metric,
+.ocean-metric-card,
+.ocean-breakdown.compact > div,
+.result-summary-list > div {
+  min-width: 0;
+}
+
+.metric b,
+.ocean-metric-card b,
+.ocean-breakdown.compact b,
+.result-summary-list b {
+  overflow-wrap: anywhere;
+}
+
+.seafood-table-wrap.compact-v24 {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(83,117,78,0.14);
+  border-radius: var(--ui-radius);
+  background: rgba(255,255,255,0.24);
+}
+
+.seafood-table.compact-v24 {
+  width: 100%;
+  min-width: 860px !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.seafood-table.compact-v24 th,
+.seafood-table.compact-v24 td {
+  vertical-align: middle;
+}
+
+.seafood-table.compact-v24 td:nth-child(3) {
+  min-width: 320px;
+}
+
+.seafood-table.compact-v24 td:nth-child(4) {
+  min-width: 110px;
+}
+
+.qty-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(88px,1fr)) max-content;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.qty-group label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.qty-group label span {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.qty-group input,
+.seafood-table .qty-group input {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.qty-group strong {
+  min-width: 88px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.alchemy-row.dense {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) max-content;
+  gap: 10px;
+  align-items: center;
+}
+
+.alchemy-row.dense > div {
+  min-width: 0;
+}
+
+.alchemy-row.dense small,
+.alchemy-row.dense em {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.craft-result-head {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) max-content;
+  gap: 10px;
+  align-items: center;
+}
+
+.craft-result-head > div,
+.recipe-main {
+  min-width: 0;
+}
+
+.craft-price-line,
+.recipe-meta,
+.recipe-mats,
+.craft-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recipe-controls-v25 {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, max-content) minmax(120px, max-content);
+  gap: 10px;
+  align-items: center;
+}
+
+.recipe-controls-v25 input,
+.recipe-controls-v25 select {
+  min-width: 0;
+  width: 100%;
+}
+
+.recipe-card {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1180px) {
+  .ocean-calc-layout.v21,
+  .alchemy-ux.v21 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .alchemy-result-card {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .compact-inputs,
+  .form-grid.two,
+  .result-grid.compact,
+  .ocean-metric-grid,
+  .recipe-controls-v25 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .spec-card-head,
+  .spec-form-title,
+  .board-head.compact {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .spec-head-actions,
+  .ocean-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .spec-head-actions button,
+  .ocean-actions button {
+    flex: 1 1 120px;
+  }
+
+  .spec-mini-grid.compact,
+  .hub-shortcuts {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  }
+
+  .ocean-tabs-compact button {
+    min-width: 126px !important;
+  }
+
+  .seafood-table.compact-v24 {
+    min-width: 760px !important;
+  }
+
+  .qty-group {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  .qty-group strong {
+    grid-column: 1 / -1;
+  }
+
+  .alchemy-row.dense,
+  .craft-result-head,
+  .recipe-card {
+    grid-template-columns: 1fr;
+  }
+
+  .alchemy-row.dense .rank-dot,
+  .craft-result-head .rank-dot {
+    justify-self: start;
+  }
+
+  .alchemy-row.dense strong,
+  .craft-result-head strong {
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .stamina-control-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .spec-mini-grid.compact,
+  .hub-shortcuts {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ocean-card.compact-card,
+  .spec-card {
+    padding: 14px !important;
   }
 }

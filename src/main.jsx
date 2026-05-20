@@ -110,9 +110,10 @@ function App(){
   const [downloads,setDownloads] = useState([]);
   const [modVersion,setModVersion] = useState(DEFAULT_MOD_VERSION);
   const [featureLocks,setFeatureLocks] = useState(defaultFeatureLocks);
-  const [oceanSettings,setOceanSettings] = useState(()=>{ try { return {...defaultOceanSettings, ...JSON.parse(localStorage.getItem('dding_ocean_settings') || '{}')}; } catch { return {...defaultOceanSettings}; } });
+  const [oceanSettings,setOceanSettings] = useState(()=>normalizeOceanSettings(readOceanSettingsFromStorage()));
   const [loading,setLoading] = useState(true);
   const [profileReady,setProfileReady] = useState(false);
+  const [oceanSettingsReady,setOceanSettingsReady] = useState(false);
   const current = hash.replace('#/','') || 'market';
 
   useEffect(()=>{ const h=()=>setHash(route()); addEventListener('hashchange',h); return()=>removeEventListener('hashchange',h); },[]);
@@ -146,30 +147,32 @@ function App(){
   useEffect(()=>{
     if(user){
       setProfileReady(false);
+      setOceanSettingsReady(false);
       ensureProfile(user)
         .then(async()=>{ await loadProfile(); await loadOceanSettings(); })
         .catch(error=>console.warn('profile bootstrap failed', error?.message || error))
-        .finally(()=>setProfileReady(true));
+        .finally(()=>{ setProfileReady(true); setOceanSettingsReady(true); });
     } else {
       setProfile(null);
       setProfileReady(false);
+      setOceanSettingsReady(true);
     }
     loadPrices(); loadLogs(); loadNotices(); loadDownloads(); loadFeatureLocks(); loadModVersion();
   },[user]);
   useEffect(()=>{
     if(user && profile?.role) loadLogs();
   },[profile?.role]);
-  const saveOceanRef = useRef(null);
+  const saveOceanRef = useRef(debounce(async(userId,next)=>{
+    if(!userId || !isSupabaseConfigured) return;
+    await supabase.from('user_ocean_settings').upsert({ user_id:userId, settings:next, updated_at:new Date().toISOString() }, { onConflict:'user_id' });
+  }, 900));
   useEffect(()=>{
-    try { localStorage.setItem('dding_ocean_settings', JSON.stringify(oceanSettings)); } catch {}
+    const normalized = normalizeOceanSettings(oceanSettings);
+    if(user && !oceanSettingsReady) return;
+    try { localStorage.setItem(oceanStorageKey(user?.id), JSON.stringify(normalized)); } catch {}
     if(!user || !isSupabaseConfigured) return;
-    if(!saveOceanRef.current){
-      saveOceanRef.current = debounce(async(next)=>{
-        await supabase.from('user_ocean_settings').upsert({ user_id:user.id, settings:next, updated_at:new Date().toISOString() }, { onConflict:'user_id' });
-      }, 900);
-    }
-    saveOceanRef.current(oceanSettings);
-  }, [oceanSettings, user?.id]);
+    saveOceanRef.current(user.id, normalized);
+  }, [oceanSettings, user?.id, oceanSettingsReady]);
 
   async function ensureProfile(u){
     if(!isSupabaseConfigured) return;
@@ -195,16 +198,18 @@ function App(){
   }
   async function loadOceanSettings(){
     if(!user || !isSupabaseConfigured) return;
-    let localSettings = {};
-    try { localSettings = JSON.parse(localStorage.getItem('dding_ocean_settings') || '{}') || {}; } catch {}
+    const localSettings = readOceanSettingsFromStorage(user.id);
     const {data,error}=await supabase.from('user_ocean_settings').select('settings').eq('user_id', user.id).maybeSingle();
-    const merged = {...defaultOceanSettings, ...(data?.settings || {}), ...localSettings};
-    if(!error){
-      setOceanSettings(merged);
-      try { localStorage.setItem('dding_ocean_settings', JSON.stringify(merged)); } catch {}
-      if(Object.keys(localSettings).length){
-        await supabase.from('user_ocean_settings').upsert({ user_id:user.id, settings:merged, updated_at:new Date().toISOString() }, { onConflict:'user_id' });
-      }
+    const merged = normalizeOceanSettings({...defaultOceanSettings, ...(data?.settings || {}), ...localSettings});
+    if(error){
+      const fallbackSettings = normalizeOceanSettings({...defaultOceanSettings, ...localSettings});
+      setOceanSettings(fallbackSettings);
+      return;
+    }
+    setOceanSettings(merged);
+    try { localStorage.setItem(oceanStorageKey(user.id), JSON.stringify(merged)); } catch {}
+    if(Object.keys(localSettings).length){
+      await supabase.from('user_ocean_settings').upsert({ user_id:user.id, settings:merged, updated_at:new Date().toISOString() }, { onConflict:'user_id' });
     }
   }
   async function loadPrices(){
@@ -1507,11 +1512,45 @@ const OCEAN_TABS = [
   ['ocean-recipes','조합법 도감','레시피'],
 ];
 const defaultOceanSettings = {
-  stamina:3000, rodLevel:12,
+  stamina:3000, rodLevel:0,
   skillFurnace:0, skillCraftBonus:0, skillAlchBonus:0, skillDeepHarvest:0, skillStarBonus:0, skillClamBonus:0,
   engClamSearch:0, engSeafoodLuck:0, engFisherRoulette:0, engSpiritWhale:0,
   alchemyMode:'include', vanillaUnitPrice:0
 };
+const OCEAN_STAMINA_MIN = 3000;
+const OCEAN_STAMINA_MAX = 9000;
+const OCEAN_STAMINA_STEP = 100;
+function clampNumber(value, min, max, fallback=min){
+  const n = Number(value);
+  if(!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+function oceanStorageKey(userId){
+  return userId ? `dding_ocean_settings:${userId}` : 'dding_ocean_settings:guest';
+}
+function readOceanSettingsFromStorage(userId){
+  try { return JSON.parse(localStorage.getItem(oceanStorageKey(userId)) || '{}') || {}; } catch { return {}; }
+}
+function normalizeOceanSettings(next={}){
+  return {
+    ...defaultOceanSettings,
+    ...next,
+    stamina: clampNumber(next.stamina ?? defaultOceanSettings.stamina, OCEAN_STAMINA_MIN, OCEAN_STAMINA_MAX, defaultOceanSettings.stamina),
+    rodLevel: clampNumber(next.rodLevel ?? defaultOceanSettings.rodLevel, 0, 15, defaultOceanSettings.rodLevel),
+    skillFurnace: clampNumber(next.skillFurnace ?? 0, 0, 5, 0),
+    skillCraftBonus: clampNumber(next.skillCraftBonus ?? 0, 0, 8, 0),
+    skillAlchBonus: clampNumber(next.skillAlchBonus ?? 0, 0, 8, 0),
+    skillDeepHarvest: clampNumber(next.skillDeepHarvest ?? 0, 0, 5, 0),
+    skillStarBonus: clampNumber(next.skillStarBonus ?? 0, 0, 6, 0),
+    skillClamBonus: clampNumber(next.skillClamBonus ?? 0, 0, 10, 0),
+    engClamSearch: clampNumber(next.engClamSearch ?? 0, 0, 3, 0),
+    engSeafoodLuck: clampNumber(next.engSeafoodLuck ?? 0, 0, 4, 0),
+    engFisherRoulette: clampNumber(next.engFisherRoulette ?? 0, 0, 5, 0),
+    engSpiritWhale: clampNumber(next.engSpiritWhale ?? 0, 0, 5, 0),
+    vanillaUnitPrice: Math.max(0, Number(next.vanillaUnitPrice || 0)),
+    alchemyMode: ['include','exclude_dilute','only_dilute'].includes(next.alchemyMode) ? next.alchemyMode : 'include'
+  };
+}
 const oceanMoney = (n) => `${Math.round(Number(n || 0)).toLocaleString('ko-KR')} G`;
 const oceanNum = (n, digits=2) => {
   const v = Number(n || 0);
@@ -1733,8 +1772,7 @@ function OceanWorkstation({active,settings,setSettings,children}){
 function OceanSpecSidebar({settings,setSettings}){
   const result=oceanStaminaResult(settings);
   const [open,setOpen]=useState(false);
-  const set=(k,v)=>setSettings(s=>({...s,[k]:Number(v)||0}));
-  const applyPreset=(preset)=>setSettings(s=>({...s,...preset}));
+  const set=(k,v)=>setSettings(s=>normalizeOceanSettings({...s,[k]:Number(v)||0}));
   const v=getOceanSkillValues(settings);
   const active=oceanEffectList(settings).filter(x=>!/(미적용|\+0%|0%$|Lv\. 0)/.test(String(x.value))).slice(0,5);
   return <aside className={`ocean-spec-sidebar v21 ${open?'open':''}`}>
@@ -1753,14 +1791,9 @@ function OceanSpecSidebar({settings,setSettings}){
         <div className="active-effect-list compact">{active.length ? active.map(x=><span key={x.name}>{x.name} {x.value}</span>) : <span>전문가 효과 기본값</span>}</div>
       </div>
       {open && <div className="ocean-settings-drawer">
-        <div className="ocean-preset-row">
-          <button onClick={()=>applyPreset({stamina:3000})}>3,000</button>
-          <button onClick={()=>applyPreset({stamina:4500})}>4,500</button>
-          <button onClick={()=>applyPreset({stamina:6000})}>6,000</button>
-        </div>
         <div className="spec-card compact-inputs">
           <div className="spec-form-title"><h4>자주 쓰는 설정</h4><span>핵심값만 먼저</span></div>
-          <NumField label="오늘 사용할 스태미나" value={settings.stamina} onChange={v=>set('stamina',v)}/>
+          <StaminaField value={settings.stamina} onChange={v=>set('stamina',v)}/>
           <SelectField label="세이지 낚싯대 강화" value={settings.rodLevel} max={15} suffix="강" onChange={v=>set('rodLevel',v)}/>
           <SelectField label="제작 시간 감소" value={settings.skillFurnace} max={5} onChange={v=>set('skillFurnace',v)}/>
           <SelectField label="프리미엄 한정가" value={settings.skillAlchBonus} max={8} onChange={v=>set('skillAlchBonus',v)}/>
@@ -1857,8 +1890,8 @@ function OceanAlchemyCalculatorV3({settings,setSettings}){
   const [mode,setMode]=useState(settings.alchemyMode||'include');
   const [showDetail,setShowDetail]=useState(false);
   useEffect(()=>persistOceanInventoryTable(form),[form]);
-  useEffect(()=>setSettings(s=>({...s,alchemyMode:mode})),[mode]);
-  const setVanilla=(v)=>setSettings(s=>({...s,vanillaUnitPrice:Number(v)||0}));
+  useEffect(()=>setSettings(s=>normalizeOceanSettings({...s,alchemyMode:mode})),[mode]);
+  const setVanilla=(v)=>setSettings(s=>normalizeOceanSettings({...s,vanillaUnitPrice:Number(v)||0}));
   const flat=useMemo(()=>oceanTableToFlat(form),[form]);
   const plan=useMemo(()=>planAlchemyV20(flat,{...settings,alchemyMode:mode}),[flat,settings,mode]);
   const fillSample=()=>{ const r=oceanStaminaResult(settings); setForm(oceanTableFromFlat(Object.fromEntries(Object.entries(r.inv).map(([k,v])=>[k,Math.floor(v)])))); };
@@ -1921,6 +1954,17 @@ function OceanCraftCalculatorV3({settings,prices}){
 }
 function CraftResultCard({row,rank}){
   return <div className="craft-result-card"><div className="craft-result-head"><span className="rank-dot">{rank}</span><div><b>{row.name}</b><small>현재가 {oceanMoney(row.currentPrice)} · 최고가 {oceanMoney(row.max)} · {row.percent}%</small></div><strong>{oceanMoney(row.total)}</strong></div><div className="craft-price-line"><span>기본 제작 판매가 {oceanMoney(row.basePrice)}</span><span>{row.expertPrice===row.basePrice?'전문가 적용 동일':`전문가 적용 ${oceanMoney(row.expertPrice)}`}</span><span>제작 가능 {row.qty.toLocaleString()}개</span></div><div className="craft-materials">{row.materials.map(m=><span key={m.key} className={!m.tracked?'untracked':''}><i className="material-icon-slot" aria-hidden="true"></i>{getMaterialDisplayName(m.key)} <b>x{oceanNum(m.qty)}</b></span>)}</div>{row.lack.length ? <em className="craft-lack">부족: {row.lack.map(x=>`${x.name} ${oceanNum(x.lack)}`).join(', ')}</em> : null}<details className="detail-box compact-detail"><summary>상세 보기</summary><div className="data-missing"><p>아이콘 없음, 가격 없음, 제작 시간 없음 같은 검수용 정보는 여기서만 확인합니다. 추적 불가 재료: {row.materials.filter(m=>!m.tracked).map(m=>getMaterialDisplayName(m.key)).join(', ') || '없음'}</p></div></details></div>;
+}
+function StaminaField({value,onChange}){
+  const current=clampNumber(value, OCEAN_STAMINA_MIN, OCEAN_STAMINA_MAX, defaultOceanSettings.stamina);
+  const fill=((current - OCEAN_STAMINA_MIN) / (OCEAN_STAMINA_MAX - OCEAN_STAMINA_MIN)) * 100;
+  const update=(next)=>onChange(clampNumber(next, OCEAN_STAMINA_MIN, OCEAN_STAMINA_MAX, defaultOceanSettings.stamina));
+  return <div className="stamina-control" style={{'--stamina-fill':`${fill}%`}}>
+    <div className="stamina-control-head"><span>오늘 사용할 스태미나</span><b>{current.toLocaleString('ko-KR')}</b></div>
+    <input className="stamina-number" type="number" inputMode="numeric" min={OCEAN_STAMINA_MIN} max={OCEAN_STAMINA_MAX} step={OCEAN_STAMINA_STEP} value={current} onChange={e=>update(e.target.value)} />
+    <input className="stamina-range" type="range" min={OCEAN_STAMINA_MIN} max={OCEAN_STAMINA_MAX} step={OCEAN_STAMINA_STEP} value={current} onChange={e=>update(e.target.value)} aria-label="오늘 사용할 스태미나" />
+    <div className="stamina-scale"><span>3,000</span><span>최대 9,000</span></div>
+  </div>;
 }
 function NumField({label,value,onChange}){ return <label className="calc-field"><span>{label}</span><input type="number" inputMode="numeric" min="0" value={value} onChange={e=>onChange(e.target.value)} /></label>; }
 function SelectField({label,value,max,onChange,suffix='Lv.'}){ return <label className="calc-field"><span>{label}</span><select value={value} onChange={e=>onChange(e.target.value)}>{Array.from({length:max+1},(_,i)=><option key={i} value={i}>{suffix === '강' ? `+${i}` : `${suffix} ${i}`}</option>)}</select></label>; }
