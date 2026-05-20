@@ -5689,3 +5689,521 @@ html[data-theme="dark"] .why-box.highlight {
     font-size: 13px;
   }
 }
+
+/* ================================================================
+   V17 OCEAN READABILITY FIX
+   ================================================================ */
+body {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.2) 260px, transparent),
+    linear-gradient(135deg, #edf7e8, #f8f1d6 46%, #e3f3f1) !important;
+}
+
+html[data-theme="dark"] body {
+  background:
+    linear-gradient(180deg, rgba(246,240,220,0.06), rgba(246,240,220,0.015) 310px, transparent),
+    linear-gradient(135deg, #101811, #17251a 55%, #122421) !important;
+}
+
+.ocean-tool .ocean-card.compact-card {
+  align-self: start;
+}
+
+.ocean-tool .board-head.compact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ocean-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mode-tabs.compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 2px 0 12px;
+}
+
+.mode-tabs.compact button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid rgba(83,117,78,0.16);
+  border-radius: var(--ui-radius);
+  background: rgba(255,255,255,0.48);
+  color: var(--text-2);
+  font-weight: 900;
+}
+
+.mode-tabs.compact button.active {
+  border-color: rgba(69,182,109,0.38);
+  background: rgba(69,182,109,0.15);
+  color: #22744a;
+}
+
+html[data-theme="dark"] .mode-tabs.compact button {
+  border-color: rgba(235,226,190,0.12);
+  background: rgba(246,240,220,0.055);
+}
+
+html[data-theme="dark"] .mode-tabs.compact button.active {
+  border-color: rgba(125,225,151,0.32);
+  background: rgba(125,225,151,0.12);
+  color: #a9efb8;
+}
+
+.result-grid.compact {
+  align-items: stretch;
+}
+
+.result-grid.compact .metric {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid rgba(83,117,78,0.14);
+  border-radius: var(--ui-radius);
+  background: rgba(255,255,255,0.42);
+}
+
+html[data-theme="dark"] .result-grid.compact .metric {
+  border-color: rgba(235,226,190,0.12);
+  background: rgba(246,240,220,0.055);
+}
+
+.result-grid.compact .metric span {
+  display: block;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.result-grid.compact .metric b {
+  display: block;
+  color: var(--text);
+  font-size: clamp(21px, 1.5vw, 28px);
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.result-grid.compact .metric.accent {
+  border-color: rgba(69,182,109,0.34);
+  background: rgba(69,182,109,0.12);
+}
+
+.ocean-breakdown.compact {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.ocean-breakdown.compact h3 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-family: var(--ff-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.ocean-breakdown.compact > div {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) max-content;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(83,117,78,0.10) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .ocean-breakdown.compact > div {
+  border-bottom-color: rgba(235,226,190,0.10) !important;
+}
+
+.ocean-breakdown.compact > div:last-child {
+  border-bottom: 0 !important;
+}
+
+.ocean-breakdown.compact span {
+  min-width: 0;
+  color: var(--text-2);
+  line-height: 1.45;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.ocean-breakdown.compact b {
+  color: var(--text);
+  font-family: var(--ff-mono);
+  font-size: 15px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.result-summary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.result-summary-list > div {
+  display: grid;
+  gap: 5px;
+  min-height: 74px;
+  padding: 12px;
+  border: 1px solid rgba(83,117,78,0.14);
+  border-radius: var(--ui-radius);
+  background: rgba(255,255,255,0.42);
+}
+
+.result-summary-list span {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.result-summary-list b {
+  color: var(--text);
+  font-family: var(--ff-mono);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.result-summary-list .profit {
+  border-color: rgba(69,182,109,0.34);
+  background: rgba(69,182,109,0.12);
+}
+
+html[data-theme="dark"] .result-summary-list > div {
+  border-color: rgba(235,226,190,0.12);
+  background: rgba(246,240,220,0.055);
+}
+
+.subheading {
+  margin: 12px 0 8px;
+  color: var(--text);
+  font-family: var(--ff-display);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.seafood-table-wrap.compact-v24 {
+  background: rgba(255,255,255,0.5);
+}
+
+.seafood-table.compact-v24 {
+  min-width: 820px !important;
+  table-layout: fixed;
+}
+
+.seafood-table.compact-v24 th,
+.seafood-table.compact-v24 td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(83,117,78,0.10);
+  white-space: normal;
+}
+
+.ocean-tool input,
+.ocean-tool select,
+.seafood-table.compact-v24 input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(83,117,78,0.17) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,0.72) !important;
+  color: var(--text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.58);
+}
+
+.ocean-tool input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.ocean-tool input[type="number"]::-webkit-outer-spin-button,
+.ocean-tool input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.ocean-tool input:focus,
+.ocean-tool select:focus {
+  border-color: rgba(69,182,109,0.45) !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(69,182,109,0.12);
+}
+
+html[data-theme="dark"] .ocean-tool input,
+html[data-theme="dark"] .ocean-tool select,
+html[data-theme="dark"] .seafood-table.compact-v24 input {
+  border-color: rgba(235,226,190,0.14) !important;
+  background: rgba(246,240,220,0.07) !important;
+}
+
+.seafood-table.compact-v24 th {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.seafood-table.compact-v24 th:nth-child(1),
+.seafood-table.compact-v24 td:nth-child(1) {
+  width: 112px;
+}
+
+.seafood-table.compact-v24 th:nth-child(2),
+.seafood-table.compact-v24 td:nth-child(2) {
+  width: 70px;
+}
+
+.seafood-table.compact-v24 th:nth-child(4),
+.seafood-table.compact-v24 td:nth-child(4),
+.seafood-table.compact-v24 th:nth-child(5),
+.seafood-table.compact-v24 td:nth-child(5) {
+  width: 116px;
+}
+
+.seafood-name-cell,
+.number-cell {
+  white-space: nowrap !important;
+}
+
+.seafood-name-cell {
+  color: var(--text);
+  font-weight: 900;
+}
+
+.number-cell {
+  color: var(--text-2);
+  font-family: var(--ff-mono);
+  font-size: 13px;
+}
+
+.qty-group {
+  grid-template-columns: minmax(96px,1fr) minmax(96px,1fr) minmax(86px,max-content);
+}
+
+.qty-group strong {
+  align-self: center;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] .seafood-table-wrap.compact-v24 {
+  background: rgba(246,240,220,0.045);
+}
+
+.alchemy-list.dense {
+  display: grid;
+  gap: 9px;
+}
+
+.alchemy-row.dense {
+  padding: 12px;
+  border: 1px solid rgba(83,117,78,0.14);
+  border-radius: var(--ui-radius);
+  background: rgba(255,255,255,0.42);
+}
+
+.alchemy-row.dense b {
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.alchemy-row.dense small,
+.alchemy-row.dense em {
+  margin-top: 4px;
+  color: var(--text-2);
+  font-style: normal;
+  line-height: 1.45;
+}
+
+html[data-theme="dark"] .alchemy-row.dense {
+  border-color: rgba(235,226,190,0.12);
+  background: rgba(246,240,220,0.055);
+}
+
+.craft-result-card,
+.recipe-card {
+  padding: 14px !important;
+  border: 1px solid rgba(83,117,78,0.14) !important;
+  border-radius: var(--ui-radius) !important;
+  background: rgba(255,255,255,0.52) !important;
+}
+
+.recipe-card {
+  grid-template-columns: minmax(0,1fr) !important;
+}
+
+html[data-theme="dark"] .craft-result-card,
+html[data-theme="dark"] .recipe-card {
+  border-color: rgba(235,226,190,0.12) !important;
+  background: rgba(246,240,220,0.055) !important;
+}
+
+.craft-result-card {
+  display: grid;
+  gap: 10px;
+}
+
+.craft-result-head b,
+.recipe-title-line b {
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.craft-result-head small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.craft-result-head strong {
+  color: var(--text);
+  font-family: var(--ff-mono);
+  white-space: nowrap !important;
+}
+
+.craft-price-line span,
+.craft-materials span,
+.recipe-meta span,
+.recipe-mats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid rgba(83,117,78,0.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.5);
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.craft-materials span b,
+.recipe-mats span b {
+  color: var(--text);
+}
+
+.craft-materials .untracked {
+  opacity: 0.72;
+}
+
+.craft-lack {
+  display: block;
+  padding: 8px 10px;
+  border-radius: var(--ui-radius);
+  background: rgba(223,107,100,0.10);
+  color: #a23d39;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+html[data-theme="dark"] .craft-price-line span,
+html[data-theme="dark"] .craft-materials span,
+html[data-theme="dark"] .recipe-meta span,
+html[data-theme="dark"] .recipe-mats span {
+  border-color: rgba(235,226,190,0.11);
+  background: rgba(246,240,220,0.055);
+}
+
+html[data-theme="dark"] .craft-lack {
+  color: #ffabab;
+}
+
+.recipe-title-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.recipe-title-line > span {
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(69,182,109,0.12);
+  color: #22744a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.recipe-status-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recipe-status-row span {
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid rgba(83,117,78,0.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.45);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.recipe-icon-slot {
+  display: none !important;
+}
+
+.detail-box {
+  margin-top: 8px;
+}
+
+.detail-box summary {
+  width: fit-content;
+  color: var(--text);
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+@media (max-width: 1180px) {
+  .ocean-tool .board-head.compact {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ocean-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .result-summary-list {
+    grid-template-columns: 1fr;
+  }
+
+  .seafood-table.compact-v24 {
+    min-width: 720px !important;
+  }
+
+  .recipe-title-line,
+  .craft-result-head {
+    align-items: flex-start;
+  }
+
+  .recipe-title-line {
+    flex-direction: column;
+  }
+}
