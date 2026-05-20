@@ -43,6 +43,8 @@ const pathRoutes = {
 };
 const route = () => location.hash || pathRoutes[location.pathname] || '#/';
 const go = (hash) => { location.hash = hash; };
+const HIDDEN_EXPERT_KEYS = new Set(['ocean']);
+const isHiddenRoute = (key='') => key === 'ocean' || key.startsWith('ocean-');
 // [SECURITY FIX] minecraft_id는 영문·숫자·언더스코어만 허용 (mcHead URL 인젝션 방지)
 const mcHead = (name) => {
   if (!name) return '';
@@ -115,8 +117,12 @@ function App(){
   const [profileReady,setProfileReady] = useState(false);
   const [oceanSettingsReady,setOceanSettingsReady] = useState(false);
   const current = hash.replace('#/','') || 'market';
+  const effectiveCurrent = isHiddenRoute(current) ? 'market' : current;
 
   useEffect(()=>{ const h=()=>setHash(route()); addEventListener('hashchange',h); return()=>removeEventListener('hashchange',h); },[]);
+  useEffect(()=>{
+    if(isHiddenRoute(current)) go('#/market');
+  },[current]);
   useEffect(()=>{
     bootChannelTalk({user, profile, theme}).catch(error=>console.warn('ChannelTalk boot failed', error));
   },[
@@ -343,17 +349,17 @@ function App(){
   }
   async function logout(){ await supabase?.auth.signOut(); setUser(null); setProfile(null); }
 
-  const activeExpertKey = current.startsWith('ocean') ? 'ocean' : ['mining','farming','hunting'].includes(current) ? current : null;
+  const activeExpertKey = ['mining','farming','hunting'].includes(effectiveCurrent) ? effectiveCurrent : null;
   const isAdminUser = ['owner','admin'].includes(profile?.role);
   const activeExpertLock = activeExpertKey ? featureLocks?.[activeExpertKey] : null;
 
   const visibleItems = useMemo(()=>{
-    if(current === 'crafting') return prices.filter(x=>x.category==='craft');
-    if(current === 'cooking') return prices.filter(x=>x.category==='cooking');
-    if(current === 'market' || current === 'home') return prices;
-    if(current === 'profile') return [];
+    if(effectiveCurrent === 'crafting') return prices.filter(x=>x.category==='craft');
+    if(effectiveCurrent === 'cooking') return prices.filter(x=>x.category==='cooking');
+    if(effectiveCurrent === 'market' || effectiveCurrent === 'home') return prices;
+    if(effectiveCurrent === 'profile') return [];
     return prices;
-  },[prices,current]);
+  },[prices,effectiveCurrent]);
 
   function isStubRoute(key){
     return ['download','mining','farming','hunting'].includes(key);
@@ -373,17 +379,17 @@ function App(){
   }
 
   return <div className="plug-shell">
-    <Topbar current={current === 'home' ? 'market' : current} user={user} profile={profile} logout={logout} theme={theme} setTheme={setTheme}/>
+    <Topbar current={effectiveCurrent === 'home' ? 'market' : effectiveCurrent} user={user} profile={profile} logout={logout} theme={theme} setTheme={setTheme}/>
     <main className="plug-main">
-      {current === 'profile'
+      {effectiveCurrent === 'profile'
         ? <Profile user={user} profile={profile} setProfile={setProfile}/>
-        : current === 'privacy'
+        : effectiveCurrent === 'privacy'
           ? <PrivacyPage/>
-        : current === 'mod-policy'
+        : effectiveCurrent === 'mod-policy'
           ? <ModPolicyPage/>
-        : current === 'notice'
+        : effectiveCurrent === 'notice'
           ? <NoticePage user={user} profile={profile} notices={notices} reload={loadNotices}/>
-          : current === 'admin'
+          : effectiveCurrent === 'admin'
             ? <AdminPage
                 user={user}
                 profile={profile}
@@ -398,18 +404,16 @@ function App(){
                 modVersion={modVersion}
                 reloadModVersion={loadModVersion}
               />
-          : current === 'home'
+          : effectiveCurrent === 'home'
             ? <MarketDesk current="market" items={prices} user={user} profile={profile} logs={logs} reload={()=>{loadPrices(); loadLogs();}} />
           : activeExpertKey && activeExpertLock?.is_locked && !isAdminUser
             ? <MaintenancePage featureKey={activeExpertKey} lock={activeExpertLock}/>
-        : (current === 'ocean' || current.startsWith('ocean-'))
-            ? <OceanRouter current={current} prices={prices} user={user} oceanSettings={oceanSettings} setOceanSettings={setOceanSettings}/>
-          : isStubRoute(current)
-          ? current === 'download'
+          : isStubRoute(effectiveCurrent)
+          ? effectiveCurrent === 'download'
             ? <DownloadPage user={user} profile={profile} downloads={downloads} reload={loadDownloads} modVersion={modVersion} reloadModVersion={loadModVersion}/>
-            : <CategoryPlaceholder current={current} profile={profile}/>
-          : ['market','crafting','cooking'].includes(current)
-          ? <MarketDesk current={current} items={visibleItems} user={user} profile={profile} logs={logs} reload={()=>{loadPrices(); loadLogs();}} />
+            : <CategoryPlaceholder current={effectiveCurrent} profile={profile}/>
+          : ['market','crafting','cooking'].includes(effectiveCurrent)
+          ? <MarketDesk current={effectiveCurrent} items={visibleItems} user={user} profile={profile} logs={logs} reload={()=>{loadPrices(); loadLogs();}} />
           : <MarketDesk current="market" items={visibleItems} user={user} profile={profile} logs={logs} reload={()=>{loadPrices(); loadLogs();}} />}
     </main>
     <SiteFooter/>
@@ -582,7 +586,6 @@ function Topbar({current,user,profile,logout,theme,setTheme}){
     ['market','오늘의 시세','/assets/nav/today.png'],
     ['crafting','공예품 시세','/assets/nav/craft.png'],
     ['cooking','요리 시세','/assets/nav/cooking.png'],
-    ['ocean','해양 전문가','/assets/professions/ocean.png'],
     ['notice','공지사항',null],
     ['download','다운로드',null],
   ];
@@ -858,7 +861,7 @@ function AdminPage({user,profile,logs,reloadLogs,featureLocks,reloadLocks,downlo
     return <section className="placeholder-page"><div className="page-title"><h1>관리자</h1><p>관리자만 접근할 수 있습니다.</p></div></section>;
   }
   const version = normalizeModVersion(modVersion);
-  const lockRows = Object.keys(defaultFeatureLocks).map(key=>locksOrDefault(featureLocks, key));
+  const lockRows = Object.keys(defaultFeatureLocks).filter(key=>!HIDDEN_EXPERT_KEYS.has(key)).map(key=>locksOrDefault(featureLocks, key));
   const lockedCount = lockRows.filter(row=>row.is_locked).length;
   const todayCount = logs.filter(log=>Date.now() - new Date(log.created_at).getTime() < 24 * 60 * 60 * 1000).length;
   const latestDownloads = downloads.slice(0,3);
@@ -976,9 +979,9 @@ function FeatureLockPanel({locks,reload}){
     await reload?.();
   }
   return <article className="feature-lock-card">
-    <div className="feature-lock-head"><div><p className="mono">MAINTENANCE LOCK</p><h2>전문가 점검 관리</h2><p>관리자만 채광·재배·해양·사냥 페이지를 개별로 잠글 수 있습니다.</p></div></div>
+    <div className="feature-lock-head"><div><p className="mono">MAINTENANCE LOCK</p><h2>전문가 점검 관리</h2><p>관리자만 현재 공개 준비 중인 전문가 페이지를 개별로 잠글 수 있습니다.</p></div></div>
     <div className="feature-lock-grid">
-      {Object.keys(defaultFeatureLocks).map(key=>{
+      {Object.keys(defaultFeatureLocks).filter(key=>!HIDDEN_EXPERT_KEYS.has(key)).map(key=>{
         const row = locks?.[key] || defaultFeatureLocks[key];
         return <div className={`feature-lock-row ${row.is_locked ? 'locked' : ''}`} key={key}>
           <div><b>{EXPERT_LABELS[key]}</b><span>{row.is_locked ? '점검 중' : '공개 중'}</span></div>
