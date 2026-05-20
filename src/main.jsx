@@ -1499,12 +1499,12 @@ const SEAFOOD_ORDER = ['oyster','conch','octopus','seaweed','urchin'];
 const TIER_ORDER = [1,2,3];
 const SEAFOOD_KO = Object.fromEntries(Object.entries(SEAFOOD_TYPES_CFG).map(([k,v])=>[k,v.name]));
 const OCEAN_TABS = [
-  ['ocean','해양 허브','요약'],
-  ['ocean-stamina','하루 수익','스태미나 기준'],
-  ['ocean-alchemy','연금 최적화','보유 어패류'],
+  ['ocean','전문가 세팅','요약'],
+  ['ocean-stamina','스태미나 계산','예상 수익'],
+  ['ocean-alchemy','연금품 계산기','보유 어패류'],
   ['ocean-materials','재료 역산','목표 제작'],
-  ['ocean-craft','공예품','조개·진주'],
-  ['ocean-recipes','제작 및 조합법','도감'],
+  ['ocean-craft','공예품 계산기','조개·진주'],
+  ['ocean-recipes','조합법 도감','레시피'],
 ];
 const defaultOceanSettings = {
   stamina:3000, rodLevel:12,
@@ -1752,9 +1752,9 @@ function OceanSpecSidebar({settings,setSettings}){
         <div className="active-effect-list compact">{active.length ? active.map(x=><span key={x.name}>{x.name} {x.value}</span>) : <span>전문가 효과 기본값</span>}</div>
       </div>
       <div className="ocean-preset-row">
-        <button onClick={()=>applyPreset({stamina:500})}>가볍게</button>
-        <button onClick={()=>applyPreset({stamina:1000})}>기본</button>
-        <button onClick={()=>applyPreset({stamina:1500})}>집중</button>
+        <button onClick={()=>applyPreset({stamina:3000})}>3,000</button>
+        <button onClick={()=>applyPreset({stamina:4500})}>4,500</button>
+        <button onClick={()=>applyPreset({stamina:6000})}>6,000</button>
       </div>
       <div className="spec-card compact-inputs">
         <div className="spec-form-title"><h4>자주 쓰는 설정</h4><span>핵심값만 먼저</span></div>
@@ -1793,11 +1793,11 @@ function OceanHubV3({settings,prices}){
     ['추천 순수익', top ? oceanMoney(top.totalProfit) : '계산 대기', top ? top.need.name : '연금 데이터 확인 필요'],
   ];
   const shortcuts=[
-    ['#/ocean-stamina','하루 수익','스태미나로 예상 획득량 확인'],
-    ['#/ocean-alchemy','연금 최적화','보유 어패류로 추천 제작 확인'],
+    ['#/ocean-stamina','스태미나 계산','스태미나로 예상 획득량 확인'],
+    ['#/ocean-alchemy','연금품 계산기','보유 어패류로 추천 제작 확인'],
     ['#/ocean-materials','재료 역산','목표 연금품 필요 재료 확인'],
-    ['#/ocean-craft','공예품 계산','조개와 진주 기준 제작 가능 확인'],
-    ['#/ocean-recipes','제작 및 조합법','연금·공예 레시피 검색'],
+    ['#/ocean-craft','공예품 계산기','조개와 진주 기준 제작 가능 확인'],
+    ['#/ocean-recipes','조합법 도감','연금·공예 레시피 검색'],
   ];
   return <div className="ocean-hub-simple">
     <article className="ocean-card compact-card hub-summary-card">
@@ -1813,8 +1813,8 @@ function OceanHubV3({settings,prices}){
     </article>
     <div className="ocean-metric-grid">{metrics.map(([title,value,desc])=><div key={title} className="ocean-metric-card"><span>{title}</span><b>{value}</b><small>{desc}</small></div>)}</div>
     <article className="ocean-card compact-card ocean-flow-card">
-      <div><span>1</span><b>스태미나 입력</b><small>오늘 사용할 양만 먼저 정합니다.</small></div>
-      <div><span>2</span><b>하루 수익 확인</b><small>어패류와 조개 기대값을 봅니다.</small></div>
+      <div><span>1</span><b>전문가 세팅</b><small>스킬, 각인, 낚싯대를 먼저 맞춥니다.</small></div>
+      <div><span>2</span><b>스태미나 계산</b><small>어패류와 조개 기대값을 봅니다.</small></div>
       <div><span>3</span><b>연금·공예 판단</b><small>현재 시세 기준 추천만 고릅니다.</small></div>
     </article>
     <article className="ocean-card compact-card ocean-action-card">
