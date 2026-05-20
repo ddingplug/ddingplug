@@ -320,11 +320,14 @@ alter table public.notices enable row level security;
 
 -- profiles policies
 drop policy if exists "Anyone can read profiles" on public.profiles;
+drop policy if exists "Users can read own profile" on public.profiles;
+drop policy if exists "Admins can read profiles" on public.profiles;
 drop policy if exists "Users can update own profile" on public.profiles;
 drop policy if exists "Users can insert own profile" on public.profiles;
-create policy "Anyone can read profiles" on public.profiles for select using (true);
-create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
-create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+create policy "Users can read own profile" on public.profiles for select to authenticated using ((select auth.uid()) = id);
+create policy "Admins can read profiles" on public.profiles for select to authenticated using ((select public.is_admin_user()));
+create policy "Users can insert own profile" on public.profiles for insert to authenticated with check ((select auth.uid()) = id);
+create policy "Users can update own profile" on public.profiles for update to authenticated using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
 -- [SECURITY FIX] role 컬럼 셀프 변경 차단 트리거
 create or replace function public.prevent_role_self_escalation()
@@ -334,7 +337,7 @@ security definer
 set search_path = public
 as $$
 begin
-  if new.id = auth.uid() and new.role <> old.role then
+  if new.id = auth.uid() and new.role is distinct from old.role then
     raise exception 'role 변경은 관리자만 가능합니다.';
   end if;
   return new;
@@ -350,25 +353,27 @@ create trigger prevent_role_self_escalation
 drop policy if exists "Anyone can read market prices" on public.market_prices;
 drop policy if exists "Logged in users can insert market prices" on public.market_prices;
 drop policy if exists "Logged in users can update market prices" on public.market_prices;
-create policy "Anyone can read market prices" on public.market_prices for select using (category in ('craft','cooking'));
-create policy "Logged in users can insert market prices" on public.market_prices for insert with check (auth.uid() is not null and category in ('craft','cooking') and price <= price_max);
-create policy "Logged in users can update market prices" on public.market_prices for update using (auth.uid() is not null and category in ('craft','cooking')) with check (auth.uid() is not null and category in ('craft','cooking') and price <= price_max);
+create policy "Anyone can read market prices" on public.market_prices for select to anon, authenticated using (category in ('craft','cooking'));
+-- Direct insert/update is intentionally not exposed. Authenticated users must use update_market_price(),
+-- which validates the item and writes a matching audit log in the same transaction.
 
 -- log policies
 drop policy if exists "Anyone can read market price logs" on public.market_price_logs;
+drop policy if exists "Admins can read market price logs" on public.market_price_logs;
 drop policy if exists "Logged in users can insert market price logs" on public.market_price_logs;
-create policy "Anyone can read market price logs" on public.market_price_logs for select using (category in ('craft','cooking'));
-create policy "Logged in users can insert market price logs" on public.market_price_logs for insert with check (auth.uid() is not null and category in ('craft','cooking'));
+create policy "Admins can read market price logs" on public.market_price_logs for select to authenticated using ((select public.is_admin_user()));
+-- Public latest-log display is served by /api/market-latest with a safe field allowlist.
+-- Direct log inserts are intentionally blocked; update_market_price() and the server-side Mod API write logs.
 
 -- notices policies
 drop policy if exists "Anyone can read published notices" on public.notices;
 drop policy if exists "Admins can insert notices" on public.notices;
 drop policy if exists "Admins can update notices" on public.notices;
 drop policy if exists "Admins can delete notices" on public.notices;
-create policy "Anyone can read published notices" on public.notices for select using (is_published = true);
-create policy "Admins can insert notices" on public.notices for insert with check (public.is_admin_user());
-create policy "Admins can update notices" on public.notices for update using (public.is_admin_user()) with check (public.is_admin_user());
-create policy "Admins can delete notices" on public.notices for delete using (public.is_admin_user());
+create policy "Anyone can read published notices" on public.notices for select to anon, authenticated using (is_published = true);
+create policy "Admins can insert notices" on public.notices for insert to authenticated with check ((select public.is_admin_user()));
+create policy "Admins can update notices" on public.notices for update to authenticated using ((select public.is_admin_user())) with check ((select public.is_admin_user()));
+create policy "Admins can delete notices" on public.notices for delete to authenticated using ((select public.is_admin_user()));
 
 -- ---------- Seed market data ----------
 insert into public.market_prices (item_key,item_name,category,price,price_max,update_cycle,checked_at,updated_at) values
@@ -401,6 +406,13 @@ on conflict (item_key) do update set
   updated_at=now();
 
 -- ---------- v12 compatibility grants ----------
+revoke execute on function public.update_market_price(text, numeric) from public, anon;
+revoke execute on function public.create_notice(text, text) from public, anon;
+revoke execute on function public.delete_notice(bigint) from public, anon;
+revoke execute on function public.is_admin_user() from public, anon;
+revoke execute on function public.set_updated_at() from public, anon, authenticated;
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.prevent_role_self_escalation() from public, anon, authenticated;
 grant execute on function public.update_market_price(text, numeric) to authenticated;
 grant execute on function public.create_notice(text, text) to authenticated;
 grant execute on function public.delete_notice(bigint) to authenticated;
@@ -445,10 +457,10 @@ drop policy if exists "Admins can insert downloads" on public.downloads;
 drop policy if exists "Admins can update downloads" on public.downloads;
 drop policy if exists "Admins can delete downloads" on public.downloads;
 
-create policy "Anyone can read downloads" on public.downloads for select using (true);
-create policy "Admins can insert downloads" on public.downloads for insert with check (public.is_admin_user());
-create policy "Admins can update downloads" on public.downloads for update using (public.is_admin_user()) with check (public.is_admin_user());
-create policy "Admins can delete downloads" on public.downloads for delete using (public.is_admin_user());
+create policy "Anyone can read downloads" on public.downloads for select to anon, authenticated using (true);
+create policy "Admins can insert downloads" on public.downloads for insert to authenticated with check ((select public.is_admin_user()));
+create policy "Admins can update downloads" on public.downloads for update to authenticated using ((select public.is_admin_user())) with check ((select public.is_admin_user()));
+create policy "Admins can delete downloads" on public.downloads for delete to authenticated using ((select public.is_admin_user()));
 
 -- ---------- v19 ocean personal settings ----------
 create table if not exists public.user_ocean_settings (
@@ -471,9 +483,9 @@ alter table public.user_ocean_settings enable row level security;
 drop policy if exists "Users can read own ocean settings" on public.user_ocean_settings;
 drop policy if exists "Users can insert own ocean settings" on public.user_ocean_settings;
 drop policy if exists "Users can update own ocean settings" on public.user_ocean_settings;
-create policy "Users can read own ocean settings" on public.user_ocean_settings for select using (auth.uid() = user_id);
-create policy "Users can insert own ocean settings" on public.user_ocean_settings for insert with check (auth.uid() = user_id);
-create policy "Users can update own ocean settings" on public.user_ocean_settings for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can read own ocean settings" on public.user_ocean_settings for select to authenticated using ((select auth.uid()) = user_id);
+create policy "Users can insert own ocean settings" on public.user_ocean_settings for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "Users can update own ocean settings" on public.user_ocean_settings for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
 -- ---------- v29 expert feature maintenance locks ----------
 create table if not exists public.feature_locks (
@@ -543,9 +555,10 @@ drop policy if exists "Anyone can read feature locks" on public.feature_locks;
 drop policy if exists "Admins can insert feature locks" on public.feature_locks;
 drop policy if exists "Admins can update feature locks" on public.feature_locks;
 drop policy if exists "Admins can delete feature locks" on public.feature_locks;
-create policy "Anyone can read feature locks" on public.feature_locks for select using (true);
-create policy "Admins can insert feature locks" on public.feature_locks for insert with check (public.is_admin_user());
-create policy "Admins can update feature locks" on public.feature_locks for update using (public.is_admin_user()) with check (public.is_admin_user());
-create policy "Admins can delete feature locks" on public.feature_locks for delete using (public.is_admin_user());
+create policy "Anyone can read feature locks" on public.feature_locks for select to anon, authenticated using (true);
+create policy "Admins can insert feature locks" on public.feature_locks for insert to authenticated with check ((select public.is_admin_user()));
+create policy "Admins can update feature locks" on public.feature_locks for update to authenticated using ((select public.is_admin_user())) with check ((select public.is_admin_user()));
+create policy "Admins can delete feature locks" on public.feature_locks for delete to authenticated using ((select public.is_admin_user()));
 
+revoke execute on function public.set_feature_lock(text, boolean, text) from public, anon;
 grant execute on function public.set_feature_lock(text, boolean, text) to authenticated;

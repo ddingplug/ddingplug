@@ -1,9 +1,21 @@
-import { getServerSupabase, sendJson, withCors, normalizeCategory, toNumber, verifyModApiKey } from './_supabase.js';
+import { getServerSupabase, sendJson, sendServerError, withCors, normalizeCategory, toNumber, verifyModApiKey } from './_supabase.js';
+
+const MAX_BODY_BYTES = 64 * 1024;
+const MINECRAFT_ID_RE = /^[A-Za-z0-9_]{3,16}$/;
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
   const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES) {
+      const error = new Error('Request body too large');
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
   const raw = Buffer.concat(chunks).toString('utf8');
   if (!raw) return {};
   return JSON.parse(raw);
@@ -13,6 +25,10 @@ function normalizeItems(body) {
   if (Array.isArray(body.items)) return body.items;
   if (body.itemKey || body.itemName || body.price) return [body];
   return [];
+}
+
+function cleanText(value, max = 80) {
+  return String(value || '').trim().slice(0, max);
 }
 
 export default async function handler(req, res) {
@@ -38,8 +54,8 @@ export default async function handler(req, res) {
     if (items.length > 30) return sendJson(res, 400, { ok: false, error: 'Too many items. Maximum is 30.' });
 
     const supabase = getServerSupabase({ service: true });
-    const requestedKeys = [...new Set(items.map((item) => item.itemKey).filter(Boolean))];
-    const requestedNames = [...new Set(items.map((item) => item.itemName).filter(Boolean))];
+    const requestedKeys = [...new Set(items.map((item) => cleanText(item.itemKey, 80)).filter(Boolean))];
+    const requestedNames = [...new Set(items.map((item) => cleanText(item.itemName, 120)).filter(Boolean))];
 
     let lookupQuery = supabase
       .from('market_prices')
@@ -56,7 +72,11 @@ export default async function handler(req, res) {
     const byName = new Map((knownRows || []).map((row) => [row.item_name, row]));
 
     let reporterProfile = null;
-    const minecraftId = String(body.minecraftId || '').trim();
+    const minecraftId = cleanText(body.minecraftId, 16);
+    if (minecraftId && !MINECRAFT_ID_RE.test(minecraftId)) {
+      return sendJson(res, 400, { ok: false, error: 'Invalid minecraftId.' });
+    }
+    const source = cleanText(body.source || 'minecraft_tooltip', 40) || 'minecraft_tooltip';
     if (minecraftId) {
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
@@ -70,13 +90,15 @@ export default async function handler(req, res) {
     const rejected = [];
 
     for (const input of items) {
-      const row = input.itemKey ? byKey.get(input.itemKey) : byName.get(input.itemName);
+      const inputKey = cleanText(input.itemKey, 80);
+      const inputName = cleanText(input.itemName, 120);
+      const row = inputKey ? byKey.get(inputKey) : byName.get(inputName);
       const price = toNumber(input.price);
       const personalPrice = input.personalPrice === undefined || input.personalPrice === null || input.personalPrice === '' ? null : toNumber(input.personalPrice);
       const priceChange = input.priceChange === undefined || input.priceChange === null || input.priceChange === '' ? null : toNumber(input.priceChange);
 
       if (!row) {
-        rejected.push({ itemKey: input.itemKey || null, itemName: input.itemName || null, reason: 'Unknown item' });
+        rejected.push({ itemKey: inputKey || null, itemName: inputName || null, reason: 'Unknown item' });
         continue;
       }
       if (!Number.isFinite(price) || price <= 0) {
@@ -117,9 +139,12 @@ export default async function handler(req, res) {
           old_price: row.price,
           new_price: price,
           changed_by: reporterProfile?.id || null,
-          source: body.source || 'minecraft_tooltip',
+          source,
           reporter_minecraft_id: minecraftId || null,
-          raw_payload: { item: input, request: { source: body.source || 'minecraft_tooltip', consentAccepted: body.consentAccepted === true }, priceChange, personalPrice },
+          raw_payload: {
+            item: { itemKey: inputKey || null, itemName: inputName || null, price, priceChange, personalPrice },
+            request: { source, consentAccepted: body.consentAccepted === true },
+          },
         });
         if (logError) throw logError;
       }
@@ -145,6 +170,8 @@ export default async function handler(req, res) {
       rejected,
     });
   } catch (error) {
-    return sendJson(res, 500, { ok: false, error: error.message || 'Internal server error' });
+    if (error.statusCode) return sendJson(res, error.statusCode, { ok: false, error: error.message });
+    if (error instanceof SyntaxError) return sendJson(res, 400, { ok: false, error: 'Invalid JSON body.' });
+    return sendServerError(res, error);
   }
 }

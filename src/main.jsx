@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { bootChannelTalk, setChannelTalkPage } from './lib/channelTalk';
 import { ALL_PRICE_ITEMS, CRAFT_ITEMS, COOKING_ITEMS } from './data/prices';
 import { OCEAN as OCEAN_CFG, ROD as ROD_CFG, OCEAN_SKILLS as OCEAN_SKILLS_CFG, OCEAN_ENGRAVING as OCEAN_ENGRAVING_CFG, CLAM as CLAM_CFG, CRAFTS as CRAFTS_CFG, ALCHEMY as ALCHEMY_CFG, PRECISION_ALCHEMY as PRECISION_ALCHEMY_CFG, VANILLA_META as VANILLA_META_CFG, OCEAN_DEFAULT_PRICES as OCEAN_DEFAULT_PRICES_CFG, SEAFOOD_TYPES as SEAFOOD_TYPES_CFG } from './data/oceanConfig';
 import './styles.css';
@@ -16,7 +17,12 @@ const formatPriceChange = (value) => {
     ? { text:`▲ ${Math.abs(n).toLocaleString()}`, direction:'up' }
     : { text:`▼ ${Math.abs(n).toLocaleString()}`, direction:'down' };
 };
-const route = () => location.hash || '#/';
+const pathRoutes = {
+  '/download': '#/download',
+  '/privacy': '#/privacy',
+  '/mod-policy': '#/mod-policy'
+};
+const route = () => location.hash || pathRoutes[location.pathname] || '#/';
 const go = (hash) => { location.hash = hash; };
 // [SECURITY FIX] minecraft_id는 영문·숫자·언더스코어만 허용 (mcHead URL 인젝션 방지)
 const mcHead = (name) => {
@@ -54,13 +60,11 @@ const withoutOptionalProfileFields = (payload) => {
   ['privacy_agreed_at','privacy_policy_version','mod_policy_agreed_at','mod_policy_version','profile_completed_at'].forEach(key=>delete next[key]);
   return next;
 };
-const timeAgo = (iso) => {
-  if (!iso) return 'not updated';
-  const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
-  return `${Math.floor(diff/86400000)}d ago`;
+const formatLogTime = (iso) => {
+  if (!iso) return '-';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('ko-KR', { month:'long', day:'numeric', hour:'numeric', minute:'2-digit' });
 };
 const debounce = (fn, wait) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); }; };
 
@@ -82,6 +86,22 @@ function App(){
   const current = hash.replace('#/','') || 'market';
 
   useEffect(()=>{ const h=()=>setHash(route()); addEventListener('hashchange',h); return()=>removeEventListener('hashchange',h); },[]);
+  useEffect(()=>{
+    bootChannelTalk({user, profile, theme}).catch(error=>console.warn('ChannelTalk boot failed', error));
+  },[
+    user?.id,
+    user?.email,
+    profile?.korean_nickname,
+    profile?.minecraft_id,
+    profile?.username,
+    profile?.avatar_url,
+    profile?.minecraft_avatar_url,
+    profile?.role,
+    theme
+  ]);
+  useEffect(()=>{
+    setChannelTalkPage(`${location.pathname}${hash}`);
+  },[hash]);
   useEffect(()=>{
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
@@ -106,6 +126,9 @@ function App(){
     }
     loadPrices(); loadLogs(); loadNotices(); loadDownloads(); loadFeatureLocks();
   },[user]);
+  useEffect(()=>{
+    if(user && profile?.role) loadLogs();
+  },[profile?.role]);
   const saveOceanRef = useRef(null);
   useEffect(()=>{
     try { localStorage.setItem('dding_ocean_settings', JSON.stringify(oceanSettings)); } catch {}
@@ -183,9 +206,32 @@ function App(){
 
   async function loadLogs(){
     if(!isSupabaseConfigured) return;
+    const isAdmin = ['owner','admin'].includes(profile?.role);
+    if(!isAdmin){
+      try {
+        const res = await fetch('/api/market-latest');
+        if(!res.ok) throw new Error('market-latest failed');
+        const payload = await res.json();
+        const latest = Array.isArray(payload.latest) ? payload.latest : payload.latest ? [payload.latest] : [];
+        setLogs(latest.map(row => ({
+          category: row.category,
+          created_at: row.updatedAt,
+          profiles: {
+            korean_nickname: row.displayName,
+            minecraft_id: row.reporterMinecraftId,
+            avatar_url: row.avatarUrl,
+            minecraft_avatar_url: row.avatarUrl
+          }
+        })));
+      } catch (error) {
+        console.warn('load public latest failed', error?.message || error);
+        setLogs([]);
+      }
+      return;
+    }
     const {data,error}=await supabase
       .from('market_price_logs')
-      .select('*')
+      .select('id,item_key,item_name,category,old_price,new_price,changed_by,created_at,source,reporter_minecraft_id')
       .in('category',['craft','cooking'])
       .order('created_at',{ascending:false})
       .limit(30);
@@ -267,8 +313,8 @@ function App(){
   }
 
   if(loading) return <div className="splash">DDING PLUG</div>;
-  if(!user && ['privacy','mod-policy'].includes(current)){
-    return <PublicInfoShell current={current} theme={theme} setTheme={setTheme}/>;
+  if(!user && ['privacy','mod-policy','download'].includes(current)){
+    return <PublicInfoShell current={current} theme={theme} setTheme={setTheme} downloads={downloads} reloadDownloads={loadDownloads}/>;
   }
   if(!user) return <LoginScreen login={login} theme={theme} setTheme={setTheme}/>;
   if(!profileReady) return <div className="splash">프로필 확인 중...</div>;
@@ -313,9 +359,14 @@ function App(){
 function LoginScreen({login,theme,setTheme}){
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   const [agreements,setAgreements] = useState({privacy:false, modApi:false});
+  const [legalModal,setLegalModal] = useState(null);
   const [message,setMessage] = useState('');
   const canStart = agreements.privacy && agreements.modApi;
   const toggleAgreement = (key) => setAgreements(prev=>({...prev,[key]:!prev[key]}));
+  const confirmAgreement = (key) => {
+    setAgreements(prev=>({...prev,[key]:true}));
+    setLegalModal(null);
+  };
   function startLogin(){
     if(!canStart){ setMessage('가입 전 필수 안내를 먼저 확인해주세요.'); return; }
     login(agreements);
@@ -334,28 +385,80 @@ function LoginScreen({login,theme,setTheme}){
       <p className="mono">LOGIN REQUIRED</p>
       <h1><span>DDING PLUG</span>는<br/>Discord 로그인 후<br/>사용할 수 있습니다.</h1>
       <p>공예품·요리 시세표를 확인하고 최신 가격을 공유하기 위해 로그인이 필요합니다.</p>
-      <div className="signup-notice">
+      <div className="signup-notice compact-signup-notice">
         <b>가입 전 확인</b>
-        <span>Discord 로그인 시 계정 식별값, 이메일, 사용자명, 프로필 이미지가 로그인 유지와 최근 수정자 표시를 위해 처리됩니다.</span>
-        <span>DDING PLUG 모드/API는 비공식 팬 도구이며, 시세 제보 기능은 이용자 고지와 동의를 전제로 사용해야 합니다.</span>
+        <span>필수 안내는 팝업에서 확인한 뒤 동의할 수 있습니다.</span>
+        <div className="login-legal-actions">
+          <button type="button" onClick={()=>setLegalModal('privacy')}>개인정보 처리방침</button>
+          <button type="button" onClick={()=>setLegalModal('modApi')}>모드/API 안내</button>
+        </div>
       </div>
       <div className="agreement-list">
         <label>
           <input type="checkbox" checked={agreements.privacy} onChange={()=>toggleAgreement('privacy')}/>
-          <span><button type="button" onClick={()=>go('#/privacy')}>개인정보 처리방침</button>을 확인하고 동의합니다.</span>
+          <span><button type="button" onClick={(e)=>{e.preventDefault(); e.stopPropagation(); setLegalModal('privacy');}}>개인정보 처리방침</button>을 확인하고 동의합니다.</span>
         </label>
         <label>
           <input type="checkbox" checked={agreements.modApi} onChange={()=>toggleAgreement('modApi')}/>
-          <span><button type="button" onClick={()=>go('#/mod-policy')}>모드/API 안내</button>를 확인했습니다.</span>
+          <span><button type="button" onClick={(e)=>{e.preventDefault(); e.stopPropagation(); setLegalModal('modApi');}}>모드/API 안내</button>를 확인했습니다.</span>
         </label>
       </div>
       {message && <p className="login-message">{message}</p>}
       <button className="primary big" disabled={!canStart} onClick={startLogin}>Discord로 시작하기</button>
     </section>
+    {legalModal && (
+      <LegalConsentModal
+        type={legalModal}
+        onClose={()=>setLegalModal(null)}
+        onConfirm={()=>confirmAgreement(legalModal)}
+      />
+    )}
   </main>;
 }
 
-function PublicInfoShell({current,theme,setTheme,returnLabel='로그인 화면'}){
+function LegalConsentModal({type,onClose,onConfirm}){
+  const isPrivacy = type === 'privacy';
+  const title = isPrivacy ? '개인정보 처리방침' : '모드/API 안내';
+  const summary = isPrivacy
+    ? '로그인, 프로필 표시, 시세 수정자 기록을 위해 필요한 최소 정보만 처리합니다.'
+    : 'DDING PLUG 모드와 API는 비공식 팬 도구이며, 시세 조회·제보 기능의 기준을 안내합니다.';
+  const items = isPrivacy
+    ? [
+        ['수집 항목', 'Discord 계정 식별값, 이메일, 사용자명, 프로필 이미지, 사이트 프로필, 시세 수정 기록'],
+        ['이용 목적', '로그인 유지, 최근 수정자 표시, 시세 제보 출처 확인, 관리자 기능 운영'],
+        ['보관 기준', '서비스 운영에 필요한 기간 동안 보관하며 삭제 요청 또는 서비스 종료 시 파기']
+      ]
+    : [
+        ['서비스 성격', '띵타이쿤 온라인 및 원작자와 무관한 유저 제작 비공식 도구'],
+        ['제보 항목', 'Minecraft ID, 아이템명, 기본 판매가, 전일 대비 변동값, 제보 시각과 처리 결과'],
+        ['운영 기준', '자동 플레이·자동 판매·서버 조작 기능 없이, 이용자 확인과 동의를 전제로 동작']
+      ];
+  return <div className="modal-backdrop legal-backdrop" role="dialog" aria-modal="true">
+    <div className="modal-card legal-modal">
+      <div className="modal-head">
+        <div>
+          <p className="mono">{isPrivacy ? 'PRIVACY POLICY' : 'MOD / API NOTICE'}</p>
+          <h2>{title}</h2>
+        </div>
+        <button type="button" onClick={onClose}>×</button>
+      </div>
+      <p className="legal-modal-summary">{summary}</p>
+      <div className="legal-modal-body">
+        {items.map(([heading, body]) => <section key={heading}>
+          <h3>{heading}</h3>
+          <p>{body}</p>
+        </section>)}
+      </div>
+      <p className="legal-modal-date">공고 및 시행일자: 2026년 5월 20일</p>
+      <div className="modal-actions legal-modal-actions">
+        <button type="button" className="ghost" onClick={onClose}>닫기</button>
+        <button type="button" className="primary" onClick={onConfirm}>{isPrivacy ? '동의하고 닫기' : '확인하고 닫기'}</button>
+      </div>
+    </div>
+  </div>;
+}
+
+function PublicInfoShell({current,theme,setTheme,returnLabel='로그인 화면',downloads=[],reloadDownloads}){
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   return <div className="plug-shell public-shell">
     <header className="topbar public-topbar">
@@ -374,7 +477,11 @@ function PublicInfoShell({current,theme,setTheme,returnLabel='로그인 화면'}
       </div>
     </header>
     <main className="plug-main">
-      {current === 'privacy' ? <PrivacyPage/> : <ModPolicyPage/>}
+      {current === 'privacy'
+        ? <PrivacyPage/>
+        : current === 'download'
+          ? <DownloadPage user={null} profile={null} downloads={downloads} reload={reloadDownloads}/>
+          : <ModPolicyPage/>}
     </main>
     <SiteFooter/>
   </div>;
@@ -527,7 +634,6 @@ function MarketDesk({current,items,user,profile,logs,reload}){
       <div className="filterbar"><span>90% 이상 추천</span></div>
     </div>
     {current === 'market' && <div className="market-summary-row">
-      <div><span>표시 항목</span><b>{items.length.toLocaleString()}개</b></div>
       <div><span>공예 추천</span><b>{hotCraft.length.toLocaleString()}개</b></div>
       <div><span>요리 추천</span><b>{hotCooking.length.toLocaleString()}개</b></div>
     </div>}
@@ -605,31 +711,8 @@ function BulkPriceModal({title,items,user,onClose,reload}){
       });
 
       if(rpcError){
-        // 이전 SQL을 쓰는 프로젝트에서도 저장되도록 fallback 처리
-        const now = new Date().toISOString();
-        const payload = {
-          item_key:item.item_key,
-          item_name:item.item_name,
-          category:item.category,
-          price:num,
-          price_max:item.price_max,
-          update_cycle:item.update_cycle,
-          updated_by:user.id,
-          checked_at:now,
-          updated_at:now,
-          price_change:null
-        };
-        const {error:updateError}=await supabase.from('market_prices').upsert(payload,{onConflict:'item_key'});
-        if(updateError){ setMessage(updateError.message); return; }
-        const {error:logError}=await supabase.from('market_price_logs').insert({
-          item_key:item.item_key,
-          item_name:item.item_name,
-          category:item.category,
-          old_price:old,
-          new_price:num,
-          changed_by:user.id
-        });
-        if(logError){ setMessage('시세는 저장됐지만 변경 로그 저장에 실패했습니다. supabase/schema.sql을 다시 실행해주세요.'); return; }
+        setMessage(rpcError.message + ' · supabase/schema.sql을 최신 버전으로 다시 실행해주세요.');
+        return;
       }
     }
     setMessage('저장되었습니다.');
@@ -688,7 +771,7 @@ function RecentPanel({logs,current}){
 function LogRow({log,label}){
   const actor = getLogActor(log);
   return <div className="recent-category public-log">
-    <div className="recent-category-head"><span>{label || categoryLabel(log.category)}</span><i>/</i><b>최근 수정</b></div>
+    <div className="recent-category-head"><span>{label || categoryLabel(log.category)}</span><i>/</i><b>{formatLogTime(log.created_at)}</b></div>
     <div className="recent-person">
       <img src={actor.avatar} onError={e=>e.currentTarget.src=fallbackAvatar}/>
       <div>
@@ -849,12 +932,43 @@ function DownloadPage({user,profile,downloads,reload}){
     a.download=item.file_name || item.title || 'download';
     document.body.appendChild(a); a.click(); a.remove();
   }
+  function scrollToDownloads(){
+    document.getElementById('download-files')?.scrollIntoView({behavior:'smooth', block:'start'});
+  }
   return <section className="download-page">
     <div className="page-title admin-title">
-      <div><h1>다운로드</h1><p>관리자가 업로드한 자료를 다운로드할 수 있습니다.</p></div>
+      <div><p className="mono">FABRIC MOD</p><h1>다운로드</h1><p>DDING PLUG Fabric 모드 최신 버전과 설치 안내를 확인하세요.</p></div>
       {isAdmin && <button className="edit-badge" onClick={()=>setOpen(true)}>자료 업로드</button>}
     </div>
-    <article className="notice-strip mod-disclaimer"><b>모드/API 안내</b><span>DDING PLUG 모드와 API는 비공식 팬 도구이며, 띵타이쿤 온라인과 독립적으로 운영됩니다. 시세 제보 기능은 유저 고지와 동의를 전제로 사용해야 합니다.</span><button onClick={()=>go('#/mod-policy')}>자세히 보기</button></article>
+    <article className="mod-download-hero">
+      <div>
+        <p className="mono">DDING PLUG FABRIC MOD</p>
+        <h2>DDING PLUG Fabric Mod v0.6.7</h2>
+        <p>띵타이쿤 시세 조회, tooltip 시세 표시, 사용자가 직접 확인한 시세의 수동 제보를 돕는 Fabric 기반 클라이언트 모드입니다.</p>
+        <div className="mod-version-meta">
+          <span>Minecraft 1.21.4</span>
+          <span>Fabric Loader 0.16.10+</span>
+          <span>Fabric API 0.119.2+1.21.4</span>
+        </div>
+      </div>
+      <button type="button" className="primary mod-download-button" onClick={scrollToDownloads}>다운로드 파일 보기</button>
+    </article>
+    <div className="mod-guide-grid">
+      <article className="privacy-card">
+        <h2>설치 방법</h2>
+        <ol>
+          <li>Fabric Loader와 Fabric API를 설치합니다.</li>
+          <li>DDING PLUG jar 파일을 Minecraft `mods` 폴더에 넣습니다.</li>
+          <li>게임 실행 후 P 키로 DDING PLUG UI를 열어 상태를 확인합니다.</li>
+        </ol>
+      </article>
+      <article className="privacy-card">
+        <h2>주의사항</h2>
+        <p>DDING PLUG 모드는 띵타이쿤 온라인 공식 서비스가 아닌 비공식 독립 정보 제공 모드입니다. 자동 판매, 자동 구매, 자동 클릭, 매크로, 서버 패킷 조작 기능은 포함되어 있지 않습니다.</p>
+      </article>
+    </div>
+    <article className="notice-strip mod-disclaimer"><b>모드/API 안내</b><span>시세 제보 기능은 유저 고지와 동의를 전제로 사용해야 하며, 공용 시세에는 기본 판매가만 반영합니다.</span><button onClick={()=>go('#/mod-policy')}>자세히 보기</button></article>
+    <div id="download-files" className="download-section-head"><p className="mono">DOWNLOAD FILES</p><h2>자료 다운로드</h2></div>
     <div className="download-grid">
       {downloads.length ? downloads.map(item=>{
         const actor=getLogActor({profiles:item.profiles});
@@ -910,13 +1024,20 @@ function ModPolicyPage(){
       <div>
         <p className="mono">MOD / API NOTICE</p>
         <h1>모드/API 이용 고지</h1>
-        <p>DDING PLUG 모드와 API의 시세 조회·제보 기능 이용 전 확인해야 할 핵심 안내입니다.</p>
+        <p>시세 조회·제보 기능을 사용할 때 어떤 정보가 오가고, 어떤 기능을 제공하지 않는지 안내합니다.</p>
       </div>
     </div>
 
-    <article className="privacy-card policy-card important-policy">
-      <h2>비공식 독립 서비스</h2>
-      <p>DDING PLUG 웹사이트, API, 마인크래프트 모드는 유저가 제작·운영하는 비공식 팬 도구입니다. DDING PLUG의 정보 수집, 시세 제보, 서비스 운영은 띵타이쿤 온라인 및 원작자와 무관하게 독립적으로 이루어집니다.</p>
+    <div className="legal-summary-strip">
+      <article><span>서비스 성격</span><b>비공식 팬 도구</b></article>
+      <article><span>제보 기준</span><b>사용자 확인 필요</b></article>
+      <article><span>제공하지 않음</span><b>자동 플레이·조작</b></article>
+    </div>
+
+    <article className="privacy-card policy-card important-policy legal-lead-card">
+      <p className="mono">IMPORTANT</p>
+      <h2>DDING PLUG는 독립적으로 운영됩니다.</h2>
+      <p>DDING PLUG 웹사이트, API, 마인크래프트 모드는 유저가 제작·운영하는 비공식 팬 도구입니다. 정보 수집, 시세 제보, 서비스 운영은 띵타이쿤 온라인 및 원작자와 무관하게 독립적으로 이루어집니다.</p>
     </article>
 
     <div className="policy-grid concise-policy-grid">
@@ -949,14 +1070,14 @@ function ModPolicyPage(){
       </article>
 
       <article className="privacy-card">
-        <h2>이용자 동의</h2>
+        <h2>사용자 확인과 동의</h2>
         <p>모드의 시세 감지·제보 기능을 사용하는 경우, 이용자는 수집 항목과 이용 목적을 확인하고 동의해야 합니다. 동의하지 않아도 시세 조회 기능은 사용할 수 있도록 운영하는 것을 원칙으로 합니다.</p>
       </article>
     </div>
 
     <article className="privacy-card policy-note-card">
       <h2>운영 고지</h2>
-      <p>DDING PLUG는 정보 제공 및 시세 공유를 위한 도구이며, 자동 플레이·자동 판매·서버 조작 기능을 제공하지 않습니다.</p>
+      <p>DDING PLUG는 정보 제공 및 시세 공유를 위한 도구이며, 자동 플레이·자동 판매·서버 조작 기능을 제공하지 않습니다. 공용 시세에는 서버 전체 참고에 적합한 기본 판매가만 반영합니다.</p>
       <p className="policy-date">공고 및 시행일자: 2026년 5월 20일</p>
     </article>
   </section>;
@@ -964,31 +1085,60 @@ function ModPolicyPage(){
 
 function PrivacyPage(){
   return <section className="privacy-page compact-policy">
-    <div className="page-title"><h1>개인정보 처리방침</h1><p>DDING PLUG 운영에 필요한 최소한의 정보 수집 및 이용 내용을 안내합니다.</p></div>
-    <article className="privacy-card">
-      <h2>1. 수집하는 정보</h2>
-      <ul>
-        <li>Discord 로그인 정보: 고유 식별값, 이메일, 사용자명, 프로필 이미지 URL</li>
-        <li>프로필 정보: 띵타이쿤 한글 닉네임, Minecraft ID, 마인크래프트 스킨 이미지 URL</li>
-        <li>서비스 이용 기록: 시세 수정 기록, 공지사항/다운로드 작성 기록</li>
-        <li>모드/API 제보 정보: 아이템명, 기본 판매가, 전일 대비 변동값, 제보 시각, 제보 출처, 연결된 Minecraft ID</li>
-      </ul>
+    <div className="page-title policy-header">
+      <div>
+        <p className="mono">PRIVACY POLICY</p>
+        <h1>개인정보 처리방침</h1>
+        <p>DDING PLUG 운영에 필요한 정보의 수집 범위, 이용 목적, 보관 기준을 안내합니다.</p>
+      </div>
+    </div>
 
-      <h2>2. 이용 목적</h2>
-      <ul>
-        <li>로그인 유지 및 사용자 프로필 표시</li>
-        <li>공예품/요리 시세 갱신 및 최근 수정자 표시</li>
-        <li>부정확하거나 악의적인 시세 입력 확인</li>
-        <li>공지사항, 다운로드, 관리자 기능 운영</li>
-      </ul>
+    <div className="legal-summary-strip">
+      <article><span>수집 원칙</span><b>필요 최소한</b></article>
+      <article><span>주요 목적</span><b>로그인·시세 기록</b></article>
+      <article><span>보관 기준</span><b>운영 필요 기간</b></article>
+    </div>
 
-      <h2>3. 보유 및 파기</h2>
-      <p>수집된 정보는 서비스 운영에 필요한 기간 동안 보관하며, 삭제 요청 또는 서비스 종료 시 지체 없이 파기합니다.</p>
+    <article className="privacy-card legal-lead-card">
+      <p className="mono">OVERVIEW</p>
+      <h2>서비스 운영에 필요한 정보만 처리합니다.</h2>
+      <p>DDING PLUG는 Discord 로그인, 프로필 표시, 시세 수정자 기록, 모드/API 제보 출처 확인을 위해 필요한 범위의 정보를 사용합니다.</p>
+    </article>
 
-      <h2>4. 모드/API 고지</h2>
-      <p>DDING PLUG 모드와 API는 띵타이쿤 온라인과 무관하게 독립적으로 운영되는 비공식 팬 도구입니다. 시세 감지·제보 기능은 이용자의 사전 고지와 동의를 전제로 사용해야 하며, 자동 플레이나 서버 조작 기능을 포함하지 않습니다.</p>
+    <div className="policy-grid concise-policy-grid">
+      <article className="privacy-card">
+        <h2>수집하는 정보</h2>
+        <ul>
+          <li>Discord 로그인 정보: 고유 식별값, 이메일, 사용자명, 프로필 이미지 URL</li>
+          <li>프로필 정보: 띵타이쿤 한글 닉네임, Minecraft ID, 마인크래프트 스킨 이미지 URL</li>
+          <li>서비스 이용 기록: 시세 수정 기록, 공지사항/다운로드 작성 기록</li>
+          <li>모드/API 제보 정보: 아이템명, 기본 판매가, 전일 대비 변동값, 제보 시각, 제보 출처, 연결된 Minecraft ID</li>
+        </ul>
+      </article>
 
-      <h2>5. 보안 및 문의</h2>
+      <article className="privacy-card">
+        <h2>이용 목적</h2>
+        <ul>
+          <li>로그인 유지 및 사용자 프로필 표시</li>
+          <li>공예품/요리 시세 갱신 및 최근 수정자 표시</li>
+          <li>부정확하거나 악의적인 시세 입력 확인</li>
+          <li>공지사항, 다운로드, 관리자 기능 운영</li>
+        </ul>
+      </article>
+
+      <article className="privacy-card">
+        <h2>보유 및 파기</h2>
+        <p>수집된 정보는 서비스 운영에 필요한 기간 동안 보관하며, 삭제 요청 또는 서비스 종료 시 지체 없이 파기합니다.</p>
+      </article>
+
+      <article className="privacy-card">
+        <h2>모드/API 고지</h2>
+        <p>DDING PLUG 모드와 API는 띵타이쿤 온라인과 무관하게 독립적으로 운영되는 비공식 팬 도구입니다. 시세 감지·제보 기능은 이용자의 사전 고지와 동의를 전제로 사용해야 하며, 자동 플레이나 서버 조작 기능을 포함하지 않습니다.</p>
+      </article>
+    </div>
+
+    <article className="privacy-card policy-note-card">
+      <h2>보안 및 문의</h2>
       <p>DDING PLUG는 인증과 데이터 저장을 위해 Supabase Auth 및 Database를 사용합니다. 개인정보 관련 문의는 사이트 운영자에게 연락해 주세요.</p>
       <p className="policy-date">공고 및 시행일자: 2026년 5월 20일</p>
     </article>
@@ -1014,6 +1164,7 @@ function ProfileSetupGate({user,profile,setProfile}){
   const nickname = form.korean_nickname.trim();
   const minecraftId = form.minecraft_id.trim();
   const validMinecraft = /^[A-Za-z0-9_]{3,16}$/.test(minecraftId);
+  const minecraftReady = !minecraftId || validMinecraft;
   const canSubmit = nickname.length >= 1 && validMinecraft && !saving;
   const face = minecraftId ? mcHead(minecraftId) : avatar(user,profile);
 
@@ -1059,16 +1210,25 @@ function ProfileSetupGate({user,profile,setProfile}){
         <p>시세 수정자 표시와 모드/API 제보 연결을 위해 기본 프로필이 필요합니다.</p>
       </div>
     </div>
-    <div className="profile-grid">
-      <article className="profile-preview market-card">
-        <div className="profile-mini"><img src={face} onError={e=>e.currentTarget.src=fallbackAvatar}/><div><h2>{nickname || minecraftId || '프로필 미설정'}</h2><p>{minecraftId ? `Minecraft · ${minecraftId}` : 'Minecraft ID를 입력해주세요.'}</p></div></div>
-        <div className="skin-stage"><img src={face} onError={e=>e.currentTarget.src=fallbackAvatar}/><b>{nickname || minecraftId || '닉네임 미설정'}</b></div>
-        <div className="joined"><span>가입 상태</span><b>프로필 설정 필요</b></div>
-      </article>
-      <article className="profile-form panel-card">
-        <h2>기본 프로필</h2>
-        <label>띵타이쿤 한글 닉네임<input value={form.korean_nickname} onChange={e=>change('korean_nickname',e.target.value)} placeholder="예: 미아"/></label>
-        <label>마인크래프트 아이디<input value={form.minecraft_id} onChange={e=>change('minecraft_id',e.target.value)} placeholder="영문/숫자/언더스코어" maxLength={16}/></label>
+    <div className="profile-grid onboarding-profile-grid">
+      <article className="profile-form panel-card onboarding-form-card">
+        <div className="form-card-head">
+          <div>
+            <p className="mono">REQUIRED</p>
+            <h2>기본 프로필</h2>
+          </div>
+          <span className="setup-step">1 / 1</span>
+        </div>
+        <label>
+          <span>띵타이쿤 한글 닉네임</span>
+          <input value={form.korean_nickname} onChange={e=>change('korean_nickname',e.target.value)} placeholder="예: 미아"/>
+          <small>시세표와 최근 수정자에 표시될 이름입니다.</small>
+        </label>
+        <label>
+          <span>마인크래프트 아이디</span>
+          <input className={minecraftReady ? '' : 'invalid'} value={form.minecraft_id} onChange={e=>change('minecraft_id',e.target.value)} placeholder="영문/숫자/언더스코어" maxLength={16}/>
+          <small className={minecraftReady ? '' : 'error'}>영문, 숫자, 언더스코어 3~16자로 입력해주세요.</small>
+        </label>
         <div className="profile-legal-note">
           <b>안내 확인</b>
           <span>입력한 프로필은 최근 수정자 표시와 시세 제보 출처 확인에 사용됩니다.</span>
@@ -1077,6 +1237,24 @@ function ProfileSetupGate({user,profile,setProfile}){
         {status && <p className="modal-message">{status}</p>}
         <button className="primary profile-complete-button" disabled={!canSubmit} onClick={completeProfile}>{saving ? '저장 중...' : '저장하고 시작하기'}</button>
       </article>
+      <aside className="profile-preview market-card onboarding-preview-card">
+        <div className="preview-card-head">
+          <span>프로필 미리보기</span>
+          <b>{canSubmit ? '준비 완료' : '입력 필요'}</b>
+        </div>
+        <div className="profile-mini onboarding-mini">
+          <img src={face} onError={e=>e.currentTarget.src=fallbackAvatar}/>
+          <div>
+            <h2>{nickname || '닉네임 입력 전'}</h2>
+            <p>{minecraftId ? `Minecraft · ${minecraftId}` : 'Minecraft ID 입력 전'}</p>
+          </div>
+        </div>
+        <div className="setup-checklist">
+          <div className={nickname ? 'done' : ''}><span></span><b>닉네임</b><em>{nickname ? '입력됨' : '필수'}</em></div>
+          <div className={validMinecraft ? 'done' : ''}><span></span><b>Minecraft ID</b><em>{validMinecraft ? '사용 가능' : '필수'}</em></div>
+        </div>
+        <p className="preview-note">설정 후 오늘의 시세, 시세 수정, 모드/API 제보 연결 기능을 사용할 수 있습니다.</p>
+      </aside>
     </div>
   </section>;
 }

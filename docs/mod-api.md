@@ -28,9 +28,13 @@ SUPABASE_URL=Supabase Project URL
 SUPABASE_ANON_KEY=Supabase anon key
 SUPABASE_SERVICE_ROLE_KEY=Supabase service role key
 DDINGPLUG_MOD_API_KEY=충분히 긴 랜덤 문자열
+DDINGPLUG_ALLOWED_ORIGIN=https://배포도메인
+DDINGPLUG_MOD_LATEST_VERSION=0.6.7
+DDINGPLUG_MOD_DOWNLOAD_URL=https://ddingplug.vercel.app/download
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY`는 서버리스 API에서만 사용해야 하며, 브라우저 코드에 노출하면 안 됩니다.
+`DDINGPLUG_MOD_API_KEY`는 모드 배포본에 하드코딩하지 말고, 운영자가 관리하는 별도 설정값으로 주입하는 방식을 권장합니다.
 
 ## 1. 시세 조회
 
@@ -60,6 +64,30 @@ GET /api/market-prices
       "updatedAt": "2026-05-19T04:10:00Z"
     }
   ]
+}
+```
+
+## 1-1. 모드 최신 버전 조회
+
+```http
+GET /api/mod-version
+```
+
+인증이나 API key가 필요 없는 공개 조회 API입니다. 개발 중에는 최신 정보가 바로 반영되도록 `Cache-Control: no-store`를 사용합니다.
+
+응답 예시:
+
+```json
+{
+  "ok": true,
+  "modId": "ddingplug",
+  "latestVersion": "0.6.7",
+  "minecraftVersion": "1.21.4",
+  "fabricLoader": "0.16.10+",
+  "fabricApi": "0.119.2+1.21.4",
+  "downloadUrl": "https://ddingplug.vercel.app/download",
+  "releaseNote": "업데이트 확인 UI 추가",
+  "required": false
 }
 ```
 
@@ -121,6 +149,9 @@ Content-Type: application/json
 - `price`만 공용 시세에 반영합니다.
 - `personalPrice`는 개인 보정가이므로 공용 시세에 저장하지 않습니다.
 - `consentAccepted: true`가 없으면 제보 API는 요청을 거부합니다.
+- 요청 본문은 64KB 이하만 허용합니다.
+- `items`는 한 요청에 최대 30개까지 허용합니다.
+- `minecraftId`는 영문, 숫자, 언더스코어 3~16자만 허용합니다.
 - `price <= 0`이면 거부합니다.
 - `price > priceMax`이면 거부합니다.
 - 없는 `itemKey` 또는 `itemName`은 거부합니다.

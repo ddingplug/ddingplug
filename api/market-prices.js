@@ -1,4 +1,4 @@
-import { getServerSupabase, sendJson, withCors, normalizeCategory, sanitizeItem } from './_supabase.js';
+import { getServerSupabase, sendJson, sendServerError, withCors, normalizeCategory, sanitizeItem } from './_supabase.js';
 
 export default async function handler(req, res) {
   if (withCors(req, res)) return;
@@ -26,6 +26,6 @@ export default async function handler(req, res) {
       items: data.map(sanitizeItem),
     });
   } catch (error) {
-    return sendJson(res, 500, { ok: false, error: error.message || 'Internal server error' });
+    return sendServerError(res, error);
   }
 }

@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DDING PLUG</title>
+    <meta name="description" content="DDING PLUG - 띵타이쿤 공예품, 요리, 해양 계산과 시세 공유 도구" />
+    <meta name="theme-color" content="#193321" />
+    <meta property="og:title" content="DDING PLUG" />
+    <meta property="og:description" content="띵타이쿤 시세표와 전문가 계산을 위한 비공식 팬 도구" />
+    <meta property="og:type" content="website" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,47 +16,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      (function() {
-        var w = window;
-        if (w.ChannelIO) {
-          return;
-        }
-        var ch = function() {
-          ch.c(arguments);
-        };
-        ch.q = [];
-        ch.c = function(args) {
-          ch.q.push(args);
-        };
-        w.ChannelIO = ch;
-        function loadChannelIO() {
-          if (w.ChannelIOInitialized) {
-            return;
-          }
-          w.ChannelIOInitialized = true;
-          var s = document.createElement('script');
-          s.type = 'text/javascript';
-          s.async = true;
-          s.src = 'https://cdn.channel.io/plugin/ch-plugin-web.js';
-          var x = document.getElementsByTagName('script')[0];
-          if (x && x.parentNode) {
-            x.parentNode.insertBefore(s, x);
-          } else {
-            document.head.appendChild(s);
-          }
-        }
-        if (document.readyState === 'complete') {
-          loadChannelIO();
-        } else {
-          window.addEventListener('DOMContentLoaded', loadChannelIO);
-          window.addEventListener('load', loadChannelIO);
-        }
-      })();
-      ChannelIO('boot', {
-        pluginKey: '5a172fdc-10ee-45ca-b437-b1c63541c969'
-      });
-    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

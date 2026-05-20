@@ -1,4 +1,4 @@
-import { getServerSupabase, sendJson, withCors, normalizeCategory } from './_supabase.js';
+import { getServerSupabase, sendJson, sendServerError, withCors, normalizeCategory } from './_supabase.js';
 
 function displayName(profile) {
   if (!profile) return '알 수 없음';
@@ -11,21 +11,24 @@ export default async function handler(req, res) {
 
   try {
     const category = normalizeCategory(req.query?.category);
-    const supabase = getServerSupabase();
+    const supabase = getServerSupabase({ service: true });
 
     let logQuery = supabase
       .from('market_price_logs')
       .select('id,item_key,item_name,category,old_price,new_price,changed_by,created_at,source,reporter_minecraft_id')
       .in('category', ['craft', 'cooking'])
       .order('created_at', { ascending: false })
-      .limit(category ? 1 : 2);
+      .limit(category ? 1 : 20);
 
     if (category) logQuery = logQuery.eq('category', category);
 
     const { data: logs, error: logError } = await logQuery;
     if (logError) throw logError;
 
-    const userIds = [...new Set((logs || []).map((log) => log.changed_by).filter(Boolean))];
+    const selectedLogs = category
+      ? (logs || []).slice(0, 1)
+      : ['craft', 'cooking'].map((cat) => (logs || []).find((log) => log.category === cat)).filter(Boolean);
+    const userIds = [...new Set(selectedLogs.map((log) => log.changed_by).filter(Boolean))];
     let profileMap = new Map();
     if (userIds.length) {
       const { data: profiles, error: profileError } = await supabase
@@ -36,7 +39,7 @@ export default async function handler(req, res) {
       profileMap = new Map((profiles || []).map((profile) => [profile.id, profile]));
     }
 
-    const latest = (logs || []).map((log) => {
+    const latest = selectedLogs.map((log) => {
       const profile = profileMap.get(log.changed_by);
       return {
         category: log.category,
@@ -55,6 +58,6 @@ export default async function handler(req, res) {
       latest: category ? (latest[0] || null) : latest,
     });
   } catch (error) {
-    return sendJson(res, 500, { ok: false, error: error.message || 'Internal server error' });
+    return sendServerError(res, error);
   }
 }

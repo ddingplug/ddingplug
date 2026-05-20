@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { timingSafeEqual } from 'node:crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -101,7 +102,20 @@ export function sanitizeItem(row) {
 export function verifyModApiKey(req) {
   const expected = process.env.DDINGPLUG_MOD_API_KEY;
   if (!expected) return { ok: false, error: 'DDINGPLUG_MOD_API_KEY is not configured.' };
-  const received = req.headers['x-ddingplug-api-key'];
-  if (!received || received !== expected) return { ok: false, error: 'Invalid API key.' };
+  const received = String(req.headers['x-ddingplug-api-key'] || '');
+  const expectedBuffer = Buffer.from(expected);
+  const receivedBuffer = Buffer.from(received);
+  if (
+    !received ||
+    expectedBuffer.length !== receivedBuffer.length ||
+    !timingSafeEqual(expectedBuffer, receivedBuffer)
+  ) {
+    return { ok: false, error: 'Invalid API key.' };
+  }
   return { ok: true };
+}
+
+export function sendServerError(res, error) {
+  console.error(error);
+  return sendJson(res, 500, { ok: false, error: 'Internal server error' });
 }
