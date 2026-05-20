@@ -1353,6 +1353,149 @@ img[src=''], img:not([src]) { display: none !important; }
 .ocean-spec-sidebar.v21 .spec-card { background: rgba(255,255,255,0.025) !important; }
 .spec-details summary { color: var(--gold) !important; }
 .hub-shortcut { background: rgba(255,255,255,0.04) !important; }
+.ocean-hub-simple {
+  display: grid;
+  gap: 12px;
+}
+.hub-summary-card {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) max-content;
+  align-items: center;
+  gap: 16px;
+}
+.hub-summary-main h2,
+.ocean-action-card h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-family: var(--ff-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.hub-summary-main p {
+  margin: 0;
+}
+.hub-alert,
+.hub-ok {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.hub-alert {
+  color: var(--gold);
+  background: rgba(243,201,105,0.12);
+  border-color: rgba(243,201,105,0.28);
+}
+.hub-ok {
+  color: var(--mint);
+  background: rgba(57,217,138,0.12);
+  border-color: rgba(57,217,138,0.24);
+}
+.ocean-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+}
+.ocean-metric-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.035);
+}
+.ocean-metric-card span,
+.ocean-metric-card small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.ocean-metric-card b {
+  display: block;
+  margin: 8px 0 6px;
+  color: var(--text);
+  font-family: var(--ff-mono);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+  word-break: keep-all;
+}
+.ocean-action-card .board-head {
+  margin-bottom: 12px;
+}
+.ocean-action-list {
+  display: grid;
+  gap: 9px;
+}
+.ocean-action-row {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(120px, 0.46fr) minmax(0,1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.035);
+  color: var(--text);
+  text-align: left;
+}
+.ocean-action-row.good {
+  border-color: rgba(57,217,138,0.24);
+  background: rgba(57,217,138,0.08);
+}
+.ocean-action-row.warn {
+  border-color: rgba(243,201,105,0.22);
+  background: rgba(243,201,105,0.08);
+}
+.ocean-action-row b,
+.ocean-action-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ocean-action-row span {
+  color: var(--text-2);
+  font-size: 14px;
+}
+.hub-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 10px;
+}
+.hub-shortcut {
+  min-width: 0;
+  min-height: 88px;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-align: left;
+}
+.hub-shortcut b,
+.hub-shortcut span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-shortcut b {
+  white-space: nowrap;
+}
+.hub-shortcut span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
 
 /* Seafood / alchemy */
 .seafood-table-wrap { max-width: 100%; overflow-x: auto; }
@@ -3387,6 +3530,28 @@ body {
     grid-template-columns: 1fr !important;
   }
 
+  .hub-summary-card,
+  .ocean-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-alert,
+  .hub-ok {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .ocean-metric-grid,
+  .hub-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ocean-action-row b,
+  .ocean-action-row span {
+    white-space: normal;
+  }
+
   .ocean-tabs-compact {
     overflow-x: auto;
     flex-wrap: nowrap;
@@ -3728,6 +3893,17 @@ body {
 
   .topbar:not(.public-topbar) .topnav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ocean-metric-grid,
+  .hub-shortcuts {
+    grid-template-columns: 1fr;
+  }
+
+  .ocean-metric-card,
+  .hub-shortcut,
+  .ocean-action-row {
+    padding: 13px;
   }
 }
 

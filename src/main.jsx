@@ -577,9 +577,12 @@ function Topbar({current,user,profile,logout,theme,setTheme}){
     ['market','오늘의 시세','/assets/nav/today.png'],
     ['crafting','공예품 시세','/assets/nav/craft.png'],
     ['cooking','요리 시세','/assets/nav/cooking.png'],
+    ['ocean','해양 전문가','/assets/professions/ocean.png'],
     ['notice','공지사항',null],
     ['download','다운로드',null],
   ];
+  const currentKey = String(current || '');
+  const isActiveNav = (key) => key === 'ocean' ? currentKey === 'ocean' || currentKey.startsWith('ocean-') : currentKey === key;
 
   useEffect(()=>{
     const close = (e)=>{ if(wrapRef.current && !wrapRef.current.contains(e.target)) setProfileOpen(false); };
@@ -592,7 +595,7 @@ function Topbar({current,user,profile,logout,theme,setTheme}){
     <nav className="topnav">
       {items.map(([key,label,icon])=> key==='market'
         ? <div className="market-nav" key={key}>
-            <button className={current==='market'?'active':''} onClick={()=>go('#/market')}>{icon && <img className="nav-icon" src={icon}/>}<span>{label}</span></button>
+            <button className={isActiveNav(key)?'active':''} onClick={()=>go('#/market')}>{icon && <img className="nav-icon" src={icon}/>}<span>{label}</span></button>
             <div className="market-subnav">
               <button className={current==='market'?'active-sub':''} onClick={()=>go('#/market')}>
                 <img className="sub-img" src="/assets/nav/today.png"/><span>오늘의 시세</span>
@@ -605,7 +608,7 @@ function Topbar({current,user,profile,logout,theme,setTheme}){
               </button>
             </div>
           </div>
-        : <button key={key} className={current===key?'active':''} onClick={()=>go(`#/${key}`)}>{icon && <img className="nav-icon" src={icon}/>}<span>{label}</span></button>)}
+        : <button key={key} className={isActiveNav(key)?'active':''} onClick={()=>go(`#/${key}`)}>{icon && <img className="nav-icon" src={icon}/>}<span>{label}</span></button>)}
     </nav>
     <button
       type="button"
@@ -648,7 +651,7 @@ const CATEGORY_META = {
   download: ['다운로드', '추후 배포 파일과 자료를 제공할 공간입니다.'],
   mining: ['채광 전문가', '채광 활동 계산 기능을 다시 연결할 예정입니다.'],
   farming: ['재배 전문가', '재배·요리·바리스타 계산 기능을 다시 연결할 예정입니다.'],
-  ocean: ['해양 전문가', '해양·공예품·연금품 계산 기능을 다시 연결할 예정입니다.'],
+  ocean: ['해양 전문가', '해양 어획, 연금, 공예품 계산을 관리하는 전문가 도구입니다.'],
   hunting: ['사냥 전문가', '사냥·포획·계약서 계산 기능을 다시 연결할 예정입니다.'],
 };
 function CategoryPlaceholder({current,profile}){
@@ -1721,7 +1724,7 @@ function OceanRouter({current,prices,user,oceanSettings,setOceanSettings}){
 function OceanWorkstation({active,settings,setSettings,children}){
   const activeMeta=OCEAN_TABS.find(t=>t[0]===active) || OCEAN_TABS[0];
   return <section className="ocean-workstation ocean-ux-v21">
-    <div className="page-title ocean-title compact-title"><div><p className="mono">OCEAN TOOL</p><h1>해양 허브</h1><p>개인 설정을 기준으로 어획, 연금, 공예 계산을 빠르게 확인합니다.</p></div></div>
+    <div className="page-title ocean-title compact-title"><div><p className="mono">OCEAN EXPERT</p><h1>해양 전문가</h1><p>{activeMeta[1]} · 개인 설정을 기준으로 어획, 연금, 공예 계산을 빠르게 확인합니다.</p></div></div>
     <div className="ocean-tabbar-v3 ocean-tabs-compact">{OCEAN_TABS.map(([key,label,sub])=><button key={key} className={active===key?'active':''} onClick={()=>go(key==='ocean'?'#/ocean':`#/${key}`)}><b>{label}</b><span>{sub}</span></button>)}</div>
     <div className="ocean-console v21"><OceanSpecSidebar settings={settings} setSettings={setSettings}/><div className="ocean-console-main"><div className="ocean-section-head compact"><span>{activeMeta[2]}</span><h2>{activeMeta[1]}</h2></div>{children}</div></div>
   </section>;
@@ -1775,17 +1778,33 @@ function OceanHubV3({settings,prices}){
   const summary=ActionSummary({settings,prices});
   const daily=summary.daily;
   const issues=summary.issues||[];
+  const top=summary.top;
+  const metrics=[
+    ['예상 어패류', formatOceanQty(daily.total), '오늘 스태미나 기준'],
+    ['어획 횟수', `${daily.count.toLocaleString()}회`, `스태미나 ${Number(settings.stamina||0).toLocaleString()}`],
+    ['조개 기대값', `${oceanNum(daily.clamDrop,1)}개`, '조개 스킬·각인 반영'],
+    ['추천 순수익', top ? oceanMoney(top.totalProfit) : '계산 대기', top ? top.need.name : '연금 데이터 확인 필요'],
+  ];
   const shortcuts=[
-    ['#/ocean-stamina','하루 수익 계산하기','스태미나로 예상 획득량 확인'],
-    ['#/ocean-alchemy','연금 최적화하기','보유 어패류로 추천 제작 확인'],
-    ['#/ocean-materials','재료 역산하기','목표 연금품 필요 재료 확인'],
-    ['#/ocean-craft','공예품 계산하기','조개/진주 기준 제작 가능 확인'],
-    ['#/ocean-recipes','제작 및 조합법 보기','연금·공예 레시피 빠르게 검색'],
+    ['#/ocean-stamina','하루 수익','스태미나로 예상 획득량 확인'],
+    ['#/ocean-alchemy','연금 최적화','보유 어패류로 추천 제작 확인'],
+    ['#/ocean-materials','재료 역산','목표 연금품 필요 재료 확인'],
+    ['#/ocean-craft','공예품 계산','조개와 진주 기준 제작 가능 확인'],
+    ['#/ocean-recipes','제작 및 조합법','연금·공예 레시피 검색'],
   ];
   return <div className="ocean-hub-simple">
     <article className="ocean-card compact-card hub-summary-card">
-      <div><p className="mono">OCEAN SUMMARY</p><h2>해양 계산 바로가기</h2><p className="muted">현재 설정: 스태미나 {Number(settings.stamina||0).toLocaleString()} · 세이지 낚싯대 +{settings.rodLevel} · 예상 획득량 {formatOceanQty(daily.total)}</p></div>
-      {issues.length ? <div className="hub-alert">⚠ {issues[0]}{issues.length>1?` 외 ${issues.length-1}건`:''}</div> : <div className="hub-ok">필수 데이터 확인됨</div>}
+      <div className="hub-summary-main">
+        <p className="mono">OCEAN DASHBOARD</p>
+        <h2>오늘 해양 작업 요약</h2>
+        <p className="muted">세이지 낚싯대 +{settings.rodLevel} · {oceanModeLabel(settings.alchemyMode)} · 모든 계산은 왼쪽 계산 기준을 즉시 반영합니다.</p>
+      </div>
+      {issues.length ? <div className="hub-alert">{issues[0]}{issues.length>1?` 외 ${issues.length-1}건`:''}</div> : <div className="hub-ok">필수 데이터 확인됨</div>}
+    </article>
+    <div className="ocean-metric-grid">{metrics.map(([title,value,desc])=><div key={title} className="ocean-metric-card"><span>{title}</span><b>{value}</b><small>{desc}</small></div>)}</div>
+    <article className="ocean-card compact-card ocean-action-card">
+      <div className="board-head compact"><div><h2>추천 작업</h2><p>현재 설정과 시세 기준으로 먼저 확인할 항목입니다.</p></div></div>
+      <div className="ocean-action-list">{summary.actions.map(action=><button key={action.title} className={`ocean-action-row ${action.tone || ''}`} onClick={()=>go(action.tone==='good'?'#/ocean-alchemy':action.tone==='warn'?'#/ocean-craft':'#/ocean-stamina')}><b>{action.title}</b><span>{action.desc}</span></button>)}</div>
     </article>
     <div className="hub-shortcuts">{shortcuts.map(([href,title,desc])=><button key={href} onClick={()=>go(href)} className="hub-shortcut"><b>{title}</b><span>{desc}</span></button>)}</div>
   </div>;
