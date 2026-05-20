@@ -1765,8 +1765,19 @@ function OceanWorkstation({active,settings,setSettings,children}){
   return <section className="ocean-workstation ocean-ux-v21">
     <div className="page-title ocean-title compact-title"><div><p className="mono">OCEAN EXPERT</p><h1>해양 전문가</h1><p>{activeMeta[1]} · 개인 설정을 기준으로 어획, 연금, 공예 계산을 빠르게 확인합니다.</p></div></div>
     <div className="ocean-tabbar-v3 ocean-tabs-compact">{OCEAN_TABS.map(([key,label,sub])=><button key={key} className={active===key?'active':''} onClick={()=>go(key==='ocean'?'#/ocean':`#/${key}`)}><b>{label}</b><span>{sub}</span></button>)}</div>
-    <div className="ocean-console v21"><OceanSpecSidebar settings={settings} setSettings={setSettings}/><div className="ocean-console-main"><div className="ocean-section-head compact"><span>{activeMeta[2]}</span><h2>{activeMeta[1]}</h2></div>{children}</div></div>
+    <div className="ocean-console v21"><OceanSpecSidebar settings={settings} setSettings={setSettings}/><div className="ocean-console-main">{children}</div></div>
   </section>;
+}
+
+function OceanToolHeader({eyebrow,title,desc,steps=[]}){
+  return <div className="ocean-tool-header">
+    <div>
+      <span>{eyebrow}</span>
+      <h2>{title}</h2>
+      <p>{desc}</p>
+    </div>
+    {steps.length ? <div className="ocean-tool-steps">{steps.map((step,i)=><b key={step}>{i+1}. {step}</b>)}</div> : null}
+  </div>;
 }
 
 function OceanSpecSidebar({settings,setSettings}){
@@ -1866,9 +1877,26 @@ function OceanStaminaCalculatorV3({settings}){
   const conservative=r.total*0.85, optimistic=r.total*1.15;
   const v=getOceanSkillValues(settings);
   const breakdown=[['낚싯대 기본 드롭',`${r.rod.seafoodDrop||0}개/회`],['심해 채집꾼',`+${v.deepHarvest}%`],['어패 행운',v.seafoodLuck?.pct?`${v.seafoodLuck.pct}% 확률 +${v.seafoodLuck.count}개`:'미적용'],['어부 룰렛',`${v.fisherRoulette}%`],['조개 관련',`${r.rod.clamPct||0}% + 스킬/각인 ${v.clamBonus+v.clamSearch}%`]];
-  return <div className="ocean-calc-layout v21">
-    <article className="ocean-card compact-card"><h2>하루 수익 요약</h2><div className="result-grid compact"><Metric title="진행 횟수" value={`${r.count.toLocaleString()}회`} accent/><Metric title="회당 기대" value={`${oceanNum(r.perCatch)}개`}/><Metric title="스태미나당" value={`${oceanNum(r.total/(Number(settings.stamina)||1),3)}개`}/></div><details className="detail-box"><summary>상세 보기</summary><div className="ocean-breakdown compact">{breakdown.map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</div></details></article>
-    <article className="ocean-card compact-card"><h2>예상 획득량</h2><div className="result-grid compact"><Metric title="보수" value={formatOceanQty(conservative)}/><Metric title="보통" value={formatOceanQty(r.total)} accent/><Metric title="낙관" value={formatOceanQty(optimistic)}/></div><div className="ocean-breakdown compact"><h3>성급 분포</h3><div><span>1성</span><b>{formatOceanQty(r.tiers[1])}</b></div><div><span>2성</span><b>{formatOceanQty(r.tiers[2])}</b></div><div><span>3성</span><b>{formatOceanQty(r.tiers[3])}</b></div><div><span>알쏭달쏭 조개</span><b>{oceanNum(r.clamDrop,1)}개</b></div><div><span>정령 고래</span><b>{oceanNum(r.whale,2)}회</b></div></div></article>
+  return <div className="ocean-tool">
+    <OceanToolHeader eyebrow="STAMINA" title="스태미나 계산기" desc="오늘 사용할 스태미나로 어획 횟수, 어패류 기대값, 조개 기대값을 한 번에 봅니다." steps={['왼쪽 계산 기준 확인','스태미나 입력','보수/보통/낙관 결과 비교']}/>
+    <div className="ocean-calc-layout v21 ocean-two-panel">
+      <article className="ocean-card compact-card ocean-primary-result">
+        <p className="mono">EXPECTED RUN</p>
+        <h2>{r.count.toLocaleString()}회 진행 가능</h2>
+        <p className="muted">스태미나 {Number(settings.stamina||0).toLocaleString()} 기준 · 1회당 {oceanNum(r.perCatch)}개 기대</p>
+        <div className="result-grid compact"><Metric title="예상 어패류" value={formatOceanQty(r.total)} accent/><Metric title="스태미나당" value={`${oceanNum(r.total/(Number(settings.stamina)||1),3)}개`}/><Metric title="조개 기대값" value={`${oceanNum(r.clamDrop,1)}개`}/></div>
+        <div className="ocean-scenario-grid">
+          <div><span>보수</span><b>{formatOceanQty(conservative)}</b></div>
+          <div className="active"><span>보통</span><b>{formatOceanQty(r.total)}</b></div>
+          <div><span>낙관</span><b>{formatOceanQty(optimistic)}</b></div>
+        </div>
+      </article>
+      <article className="ocean-card compact-card">
+        <h2>획득 분포</h2>
+        <div className="ocean-breakdown compact ocean-clean-list"><h3>성급 분포</h3><div><span>1성 어패류</span><b>{formatOceanQty(r.tiers[1])}</b></div><div><span>2성 어패류</span><b>{formatOceanQty(r.tiers[2])}</b></div><div><span>3성 어패류</span><b>{formatOceanQty(r.tiers[3])}</b></div><div><span>알쏭달쏭 조개</span><b>{oceanNum(r.clamDrop,1)}개</b></div><div><span>정령 고래</span><b>{oceanNum(r.whale,2)}회</b></div></div>
+        <details className="detail-box"><summary>계산 근거</summary><div className="ocean-breakdown compact">{breakdown.map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</div></details>
+      </article>
+    </div>
   </div>;
 }
 
@@ -1898,9 +1926,11 @@ function OceanAlchemyCalculatorV3({settings,setSettings}){
   const reset=()=>setForm(oceanTableFromFlat({}));
   const totalCraft=plan.entries.reduce((a,b)=>a+(b.qty||0),0);
   const used=computeUsedSeafood(flat, plan.remain);
-  return <div className="alchemy-ux v21">
+  return <div className="ocean-tool">
+    <OceanToolHeader eyebrow="ALCHEMY" title="연금품 계산기" desc="보유 어패류를 넣으면 현재 설정 기준으로 제작 우선순위와 남는 재료를 계산합니다." steps={['보유량 입력','희석액 조건 선택','추천 제작 확인']}/>
+    <div className="alchemy-ux v21 ocean-two-panel">
     <article className="ocean-card compact-card alchemy-input-card">
-      <div className="board-head compact"><div><h2>보유 어패류</h2><p>낱개와 64개 세트를 나눠 입력하면 총 보유량이 자동 계산됩니다.</p></div><div className="ocean-actions"><button className="ghost-pill" onClick={fillSample}>오늘 평균치 채우기</button><button className="ghost-pill" onClick={reset}>전체 초기화</button></div></div>
+      <div className="board-head compact"><div><h2>보유 어패류 입력</h2><p>낱개와 64개 세트를 나눠 입력합니다. 입력값은 브라우저에 자동 저장됩니다.</p></div><div className="ocean-actions"><button className="ghost-pill" onClick={fillSample}>오늘 예상치 채우기</button><button className="ghost-pill" onClick={reset}>전체 초기화</button></div></div>
       <div className="mode-tabs compact"><button className={mode==='include'?'active':''} onClick={()=>setMode('include')}>희석액 포함</button><button className={mode==='exclude_dilute'?'active':''} onClick={()=>setMode('exclude_dilute')}>희석액 제외</button><button className={mode==='only_dilute'?'active':''} onClick={()=>setMode('only_dilute')}>희석액만</button></div>
       <SeafoodInputTable form={form} setForm={setForm} used={used} remain={plan.remain}/>
       <div className="single-option"><NumField label="바닐라 재료 단가 일괄 차감 · 실제 재료별 가격 데이터가 없으면 0으로 두세요" value={settings.vanillaUnitPrice||0} onChange={setVanilla}/></div>
@@ -1920,6 +1950,7 @@ function OceanAlchemyCalculatorV3({settings,setSettings}){
       <div className="split-result"><RemainSeafood remain={plan.remain}/>{plan.shortage?.length ? <NeedSection title="부족한 대표 어패류" data={Object.fromEntries(plan.shortage.map(x=>[x.key, x.need-x.have]))} labeler={seafoodLabel}/> : null}</div>
       <details className="detail-box" open={showDetail} onToggle={e=>setShowDetail(e.currentTarget.open)}><summary>상세 보기</summary><div className="why-box"><b>왜 이 조합인가요?</b><p>{plan.entries[0] ? explainOptimizerChoice(plan.entries[0]) : '제작 가능한 후보가 없어 최적 조합을 만들 수 없습니다.'}</p><p>기본 기준은 순수익 최대화이며, 같은 순수익이면 남는 어패류가 적은 조합을 우선합니다.</p></div><NeedSection title="계산에 포함된 바닐라 재료" data={aggregateVanillaNeed(plan.entries)} labeler={getVanillaName}/><DataMissingBox/></details>
     </aside>
+    </div>
   </div>;
 }
 function AlchemyResultRow({entry,rank}){ const vanilla=entry.need?.vanilla||{}; const vRows=Object.entries(vanilla).slice(0,3); return <div className="alchemy-row dense"><span className="rank-dot">{rank}</span><div><b>{entry.need.name}</b><small>제작 {entry.qty.toLocaleString()}개 · 매출 {oceanMoney(entry.totalSell)} · 부재료 {oceanMoney(entry.totalCost)}</small><small>필요 어패류: {Object.entries(entry.need.seafood||{}).slice(0,4).map(([k,v])=>`${seafoodLabel(k)} ${formatOceanQty(v*entry.qty)}`).join(' / ') || '없음'}</small>{vRows.length ? <em>바닐라: {vRows.map(([k,v])=>`${getVanillaName(k)} ${oceanNum(v*entry.qty)}`).join(', ')}{Object.keys(vanilla).length>3?' 외':''}</em> : <em>바닐라 재료 데이터 없음 또는 필요 없음</em>}</div><strong>{oceanMoney(entry.totalProfit)}</strong></div>; }
@@ -1940,7 +1971,13 @@ function OceanMaterialCalculatorV3({settings}){
   const reduce=(getOceanSkillValues(settings).furnaceReduce||0)/100;
   const lackMap=(data)=>Object.fromEntries(Object.entries(data||{}).map(([k,v])=>[k,Math.max(0,Number(v||0)-Number(have[k]||0))]).filter(([,v])=>v>0));
   const copy=()=>navigator.clipboard?.writeText(Object.entries({...need.seafood,...need.vanilla}).map(([k,v])=>`${isSeafoodKey(k)?seafoodLabel(k):getVanillaName(k)} ${oceanNum(v)}`).join('\n'));
-  return <div className="ocean-calc-layout v21"><article className="ocean-card compact-card"><h2>목표 설정</h2><div className="form-grid two"><label className="calc-field"><span>목표 연금품</span><select value={target} onChange={e=>setTarget(e.target.value)}>{Object.entries(PRECISION_ALCHEMY_CFG).map(([k,v])=><option key={k} value={k}>{v.name}</option>)}</select></label><NumField label="목표 수량" value={qty} onChange={setQty}/></div><div className="ocean-comment compact"><b>제작 시간 감소 적용</b><p>Lv.{settings.skillFurnace} · -{getOceanSkillValues(settings).furnaceReduce}%</p></div><button className="ghost-pill" onClick={copy}>결과 복사</button></article><article className="ocean-card compact-card"><h2>{need.name} {Number(qty||0).toLocaleString()}개 필요 재료</h2><div className="result-grid compact"><Metric title="기본 제작 시간" value={formatOceanTime(need.time)}/><Metric title="전문가 적용" value={formatOceanTime(need.time*(1-reduce))} accent/><Metric title="중간 재료" value={`${Object.keys(need.intermediate).length}종`}/></div><NeedSection title="부족 어패류" data={lackMap(need.seafood)} labeler={seafoodLabel}/><NeedSection title="필요 바닐라 재료" data={need.vanilla} labeler={getVanillaName}/><NeedSection title="중간 제작 단계" data={need.intermediate} labeler={(k)=>ALCHEMY_CFG[k]?.name || k}/><details className="detail-box"><summary>상세 보기</summary><DataMissingBox/></details></article></div>;
+  return <div className="ocean-tool">
+    <OceanToolHeader eyebrow="MATERIALS" title="재료 역산" desc="목표 연금품과 수량을 정하면 필요한 어패류, 바닐라 재료, 중간 제작 단계를 역산합니다." steps={['목표 선택','수량 입력','필요 재료 복사']}/>
+    <div className="ocean-calc-layout v21 ocean-two-panel">
+      <article className="ocean-card compact-card ocean-input-panel"><h2>목표 설정</h2><div className="form-grid two"><label className="calc-field"><span>목표 연금품</span><select value={target} onChange={e=>setTarget(e.target.value)}>{Object.entries(PRECISION_ALCHEMY_CFG).map(([k,v])=><option key={k} value={k}>{v.name}</option>)}</select></label><NumField label="목표 수량" value={qty} onChange={setQty}/></div><div className="ocean-comment compact"><b>제작 시간 감소 적용</b><p>Lv.{settings.skillFurnace} · -{getOceanSkillValues(settings).furnaceReduce}%</p></div><button className="ghost-pill wide" onClick={copy}>필요 재료 복사</button></article>
+      <article className="ocean-card compact-card ocean-primary-result"><p className="mono">REQUIRED MATERIALS</p><h2>{need.name} {Number(qty||0).toLocaleString()}개</h2><div className="result-grid compact"><Metric title="기본 제작 시간" value={formatOceanTime(need.time)}/><Metric title="전문가 적용" value={formatOceanTime(need.time*(1-reduce))} accent/><Metric title="중간 재료" value={`${Object.keys(need.intermediate).length}종`}/></div><div className="ocean-material-grid"><NeedSection title="부족 어패류" data={lackMap(need.seafood)} labeler={seafoodLabel}/><NeedSection title="필요 바닐라 재료" data={need.vanilla} labeler={getVanillaName}/><NeedSection title="중간 제작 단계" data={need.intermediate} labeler={(k)=>ALCHEMY_CFG[k]?.name || k}/></div><details className="detail-box"><summary>데이터 상태</summary><DataMissingBox/></details></article>
+    </div>
+  </div>;
 }
 function NeedSection({title,data,labeler}){ const rows=Object.entries(data||{}).filter(([,v])=>v>0.0001); return <div className="ocean-breakdown compact"><h3>{title}</h3>{rows.length ? rows.map(([k,v])=><div key={k}><span>{labeler(k)}</span><b>{isSeafoodKey(k)?formatOceanQty(v):oceanNum(v)}</b></div>) : <p className="muted">필요 없음</p>}</div>; }
 
@@ -1950,7 +1987,11 @@ function OceanCraftCalculatorV3({settings,prices}){
   const set=(k,v)=>setForm(f=>({...f,[k]:Number(v)||0}));
   const rows=craftRowsV20(form,settings,prices);
   const best=rows.find(r=>r.qty>0);
-  return <div className="ocean-calc-layout v21"><article className="ocean-card compact-card"><h2>보유 재료</h2><p className="muted">조개 좀 사조개 Lv.{settings.skillCraftBonus}이 적용 전/후 비교에 자동 반영됩니다.</p><div className="form-grid two"><NumField label="깨진 조개껍데기" value={form.shell} onChange={v=>set('shell',v)}/>{Object.entries(pearlMap).map(([k,n])=><NumField key={k} label={n} value={form[k]} onChange={v=>set(k,v)}/>)}</div></article><article className="ocean-card compact-card"><h2>제작 가능 공예품</h2>{best && <div className="why-box"><b>추천 제작</b><p>{best.name}이 현재 보유 재료와 입력 시세 기준 가장 높은 예상 가치를 가집니다.</p></div>}<div className="craft-card-list">{rows.map((r,i)=><CraftResultCard key={r.key} row={r} rank={i+1}/>)}</div></article></div>;
+  const totalValue=rows.reduce((a,b)=>a+b.total,0);
+  return <div className="ocean-tool">
+    <OceanToolHeader eyebrow="CRAFT" title="공예품 계산기" desc="조개와 진주 보유량을 넣으면 제작 가능 수량과 현재 시세 기준 예상 가치를 계산합니다." steps={['재료 입력','제작 가능 확인','최고 가치 선택']}/>
+    <div className="ocean-calc-layout v21 ocean-two-panel"><article className="ocean-card compact-card ocean-input-panel"><h2>보유 재료 입력</h2><p className="muted">조개 좀 사조개 Lv.{settings.skillCraftBonus} 효과가 제작 판매가에 반영됩니다.</p><div className="form-grid two"><NumField label="깨진 조개껍데기" value={form.shell} onChange={v=>set('shell',v)}/>{Object.entries(pearlMap).map(([k,n])=><NumField key={k} label={n} value={form[k]} onChange={v=>set(k,v)}/>)}</div><div className="result-grid compact"><Metric title="총 예상 가치" value={oceanMoney(totalValue)} accent/><Metric title="추천 공예품" value={best?.name || '제작 불가'}/></div></article><article className="ocean-card compact-card"><h2>제작 가능 공예품</h2>{best && <div className="why-box highlight"><b>{best.name} 추천</b><p>입력한 재료와 현재 시세 기준 가장 높은 예상 가치를 가집니다. 제작 가능 {best.qty.toLocaleString()}개 · 예상 {oceanMoney(best.total)}</p></div>}<div className="craft-card-list">{rows.map((r,i)=><CraftResultCard key={r.key} row={r} rank={i+1}/>)}</div></article></div>
+  </div>;
 }
 function CraftResultCard({row,rank}){
   return <div className="craft-result-card"><div className="craft-result-head"><span className="rank-dot">{rank}</span><div><b>{row.name}</b><small>현재가 {oceanMoney(row.currentPrice)} · 최고가 {oceanMoney(row.max)} · {row.percent}%</small></div><strong>{oceanMoney(row.total)}</strong></div><div className="craft-price-line"><span>기본 제작 판매가 {oceanMoney(row.basePrice)}</span><span>{row.expertPrice===row.basePrice?'전문가 적용 동일':`전문가 적용 ${oceanMoney(row.expertPrice)}`}</span><span>제작 가능 {row.qty.toLocaleString()}개</span></div><div className="craft-materials">{row.materials.map(m=><span key={m.key} className={!m.tracked?'untracked':''}><i className="material-icon-slot" aria-hidden="true"></i>{getMaterialDisplayName(m.key)} <b>x{oceanNum(m.qty)}</b></span>)}</div>{row.lack.length ? <em className="craft-lack">부족: {row.lack.map(x=>`${x.name} ${oceanNum(x.lack)}`).join(', ')}</em> : null}<details className="detail-box compact-detail"><summary>상세 보기</summary><div className="data-missing"><p>아이콘 없음, 가격 없음, 제작 시간 없음 같은 검수용 정보는 여기서만 확인합니다. 추적 불가 재료: {row.materials.filter(m=>!m.tracked).map(m=>getMaterialDisplayName(m.key)).join(', ') || '없음'}</p></div></details></div>;
@@ -1991,7 +2032,8 @@ function OceanRecipeBook(){
     return catOk && kindOk && qOk;
   });
   const hasCombination=rows.some(r=>r.kind==='조합법');
-  return <div className="recipe-book">
+  return <div className="ocean-tool recipe-book">
+    <OceanToolHeader eyebrow="RECIPES" title="조합법 도감" desc="연금품, 중간 재료, 공예품 레시피를 검색하고 제작법/조합법 기준으로 필터링합니다." steps={['검색','분류 필터','재료 확인']}/>
     <article className="ocean-card compact-card recipe-toolbar">
       <div><h2>제작 및 조합법</h2><p className="muted">제공된 해양 데이터 기준으로 제작법과 조합법을 구분해 조회합니다.</p></div>
       <div className="recipe-controls recipe-controls-v25"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="제작물 또는 재료 검색"/><select value={cat} onChange={e=>setCat(e.target.value)}>{cats.map(c=><option key={c}>{c}</option>)}</select><select value={kind} onChange={e=>setKind(e.target.value)}>{['전체','제작법','조합법'].map(c=><option key={c}>{c}</option>)}</select></div>
