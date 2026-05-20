@@ -1155,7 +1155,7 @@ function ModPolicyPage(){
       <article className="privacy-card">
         <h2>제보 방식</h2>
         <ul>
-          <li>모드는 웹사이트 화면을 스크랩하지 않고 DDING PLUG API를 사용합니다.</li>
+          <li>모드는 DDING PLUG API를 통해 최신 시세와 업데이트 정보를 확인합니다.</li>
           <li>모드는 Supabase DB에 직접 접근하지 않습니다.</li>
           <li>시세 제보는 사용자의 확인과 동의를 전제로 동작해야 합니다.</li>
           <li>공용 시세에는 기본 판매가만 반영하며, 개인 보정 판매가는 공용 시세로 저장하지 않습니다.</li>
