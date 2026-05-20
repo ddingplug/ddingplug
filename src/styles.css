@@ -3597,3 +3597,211 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ================================================================
+   V12 MOBILE MARKET FLOW
+   ================================================================ */
+@media (max-width: 640px) {
+  .plug-shell {
+    padding: 12px 10px 64px;
+  }
+
+  .plug-main {
+    width: 100%;
+  }
+
+  .topbar:not(.public-topbar) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 154px);
+    gap: 8px;
+    padding: 10px !important;
+    border-radius: 18px !important;
+    margin-bottom: 14px;
+  }
+
+  .topbar:not(.public-topbar) .brand {
+    font-size: 18px;
+    align-self: center;
+  }
+
+  .topbar:not(.public-topbar) .profile-menu {
+    min-width: 0;
+  }
+
+  .topbar:not(.public-topbar) .top-user {
+    height: 42px;
+    gap: 7px;
+    padding: 5px 8px 5px 5px;
+    border-radius: 14px;
+  }
+
+  .topbar:not(.public-topbar) .top-user img {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+    border-radius: 8px;
+  }
+
+  .topbar:not(.public-topbar) .top-user b {
+    max-width: 88px;
+    font-size: 13px;
+  }
+
+  .topbar:not(.public-topbar) .top-user span {
+    max-width: 88px;
+    font-size: 11px;
+  }
+
+  .topbar:not(.public-topbar) .topnav {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding-top: 2px;
+  }
+
+  .topbar:not(.public-topbar) .topnav > button,
+  .topbar:not(.public-topbar) .topnav .market-nav > button {
+    height: 40px;
+    min-width: 0;
+    padding: 0 8px;
+    border-radius: 14px;
+    font-size: 13px;
+  }
+
+  .topbar:not(.public-topbar) .nav-icon {
+    width: 18px !important;
+    height: 18px !important;
+    flex-basis: 18px;
+  }
+
+  .market-page {
+    width: 100%;
+  }
+
+  .market-page .compact-page-header {
+    margin-bottom: 10px !important;
+    padding: 22px 20px !important;
+    border-radius: 22px !important;
+  }
+
+  .market-page .compact-page-header h1 {
+    font-size: 32px !important;
+  }
+
+  .market-page .compact-page-header p {
+    font-size: 14px !important;
+    line-height: 1.7;
+  }
+
+  .market-page .filterbar {
+    margin-top: 12px;
+  }
+
+  .market-page .filterbar span {
+    width: fit-content;
+  }
+
+  .market-summary-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .market-summary-row div {
+    min-height: 86px;
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+
+  .market-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    align-items: stretch !important;
+    width: 100%;
+  }
+
+  .market-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    width: 100%;
+    order: 1;
+  }
+
+  .compact-recent {
+    order: 2;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 0 !important;
+    opacity: 1 !important;
+    padding: 18px !important;
+    border-radius: 18px !important;
+  }
+
+  .compact-recent .mono,
+  .panel-card .mono {
+    margin-bottom: 10px;
+  }
+
+  .recent-split,
+  .panel-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .recent-category,
+  .log-row {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .recent-category {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .market-board {
+    width: 100%;
+    padding: 18px !important;
+    border-radius: 20px !important;
+  }
+
+  .board-head {
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .board-head h2 {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .board-head p {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .empty-state {
+    min-height: 98px;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    line-height: 1.55;
+  }
+
+  .market-note {
+    padding: 0 4px;
+    text-align: left;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+}
