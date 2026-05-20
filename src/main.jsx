@@ -463,7 +463,8 @@ function LegalConsentModal({type,onClose,onConfirm}){
         ['보관 기준', '서비스 운영에 필요한 기간 동안 보관하며 삭제 요청 또는 서비스 종료 시 파기']
       ]
     : [
-        ['서비스 성격', '띵타이쿤 온라인 및 원작자와 무관한 유저 제작 비공식 도구'],
+        ['서비스 성격', '하이퍼루나틱 및 띵타이쿤 공식 서비스와 무관한 개인 제작 비공식 도구'],
+        ['저작권 안내', '띵타이쿤 및 관련 콘텐츠의 저작권은 원 개발사와 권리자에게 귀속'],
         ['제보 항목', 'Minecraft ID, 아이템명, 기본 판매가, 전일 대비 변동값, 제보 시각과 처리 결과'],
         ['운영 기준', '자동 플레이·자동 판매·서버 조작 기능 없이, 이용자 확인과 동의를 전제로 동작']
       ];
@@ -1005,7 +1006,7 @@ function DownloadPage({user,profile,downloads,reload,modVersion=DEFAULT_MOD_VERS
       </article>
       <article className="privacy-card">
         <h2>주의사항</h2>
-        <p>DDING PLUG 모드는 띵타이쿤 온라인 공식 서비스가 아닌 비공식 독립 정보 제공 모드입니다. 자동 판매, 자동 구매, 자동 클릭, 매크로, 서버 패킷 조작 기능은 포함되어 있지 않습니다.</p>
+        <p>DDING PLUG 모드는 하이퍼루나틱 및 띵타이쿤 공식 서비스와 무관한 개인 제작 비공식 정보 제공 모드입니다. 띵타이쿤 및 관련 콘텐츠의 저작권은 원 개발사와 권리자에게 있으며, 자동 판매, 자동 구매, 자동 클릭, 매크로, 서버 패킷 조작 기능은 포함되어 있지 않습니다.</p>
       </article>
     </div>
     <article className="notice-strip mod-disclaimer"><b>모드/API 안내</b><span>시세 제보 기능은 유저 고지와 동의를 전제로 사용해야 하며, 공용 시세에는 기본 판매가만 반영합니다.</span><button onClick={()=>go('#/mod-policy')}>자세히 보기</button></article>
@@ -1130,7 +1131,7 @@ function ModPolicyPage(){
     <article className="privacy-card policy-card important-policy legal-lead-card">
       <p className="mono">IMPORTANT</p>
       <h2>DDING PLUG는 독립적으로 운영됩니다.</h2>
-      <p>DDING PLUG 웹사이트, API, 마인크래프트 모드는 유저가 제작·운영하는 비공식 팬 도구입니다. 정보 수집, 시세 제보, 서비스 운영은 띵타이쿤 온라인 및 원작자와 무관하게 독립적으로 이루어집니다.</p>
+      <p>DDING PLUG 웹사이트, API, 마인크래프트 모드는 하이퍼루나틱 및 띵타이쿤 공식 서비스와 무관하게 개인이 제작·운영하는 비공식 팬 도구입니다. 띵타이쿤 및 관련 콘텐츠의 저작권은 원 개발사와 권리자에게 귀속됩니다.</p>
     </article>
 
     <div className="policy-grid concise-policy-grid">
@@ -1226,7 +1227,7 @@ function PrivacyPage(){
 
       <article className="privacy-card">
         <h2>모드/API 고지</h2>
-        <p>DDING PLUG 모드와 API는 띵타이쿤 온라인과 무관하게 독립적으로 운영되는 비공식 팬 도구입니다. 시세 감지·제보 기능은 이용자의 사전 고지와 동의를 전제로 사용해야 하며, 자동 플레이나 서버 조작 기능을 포함하지 않습니다.</p>
+        <p>DDING PLUG 모드와 API는 하이퍼루나틱 및 띵타이쿤 공식 서비스와 무관하게 독립적으로 운영되는 개인 제작 비공식 팬 도구입니다. 띵타이쿤 및 관련 콘텐츠의 저작권은 원 개발사와 권리자에게 있으며, 시세 감지·제보 기능은 이용자의 사전 고지와 동의를 전제로 사용해야 합니다.</p>
       </article>
     </div>
 
@@ -1241,7 +1242,7 @@ function PrivacyPage(){
 function SiteFooter(){
   return <footer className="site-footer">
     <p>© 2026 띵플러그. All rights reserved.</p>
-    <p>본 웹사이트는 유저가 제작한 비공식 팬사이트이며, 저작권은 원작자에게 있습니다.</p>
+    <p>띵타이쿤 및 관련 콘텐츠의 저작권은 원 개발사와 권리자에게 있으며, 본 웹사이트는 하이퍼루나틱과 무관하게 개인이 제작한 비공식 팬사이트입니다.</p>
     <div className="footer-links"><button onClick={()=>go('#/privacy')}>개인정보 처리방침</button><button onClick={()=>go('#/mod-policy')}>모드/API 안내</button></div>
   </footer>;
 }
