@@ -1738,11 +1738,12 @@ function OceanSpecSidebar({settings,setSettings}){
   const v=getOceanSkillValues(settings);
   const active=oceanEffectList(settings).filter(x=>!/(미적용|\+0%|0%$|Lv\. 0)/.test(String(x.value))).slice(0,5);
   return <aside className={`ocean-spec-sidebar v21 ${open?'open':''}`}>
-    <button className="ocean-mobile-toggle" onClick={()=>setOpen(o=>!o)}>{open?'계산 기준 닫기':'계산 기준 열기'}</button>
     <div className="ocean-spec-body">
-      <div className="spec-save"><span className="pulse-dot"></span>{isSupabaseConfigured ? '자동 저장됨' : '로컬 저장'}</div>
       <div className="spec-card main compact-spec">
-        <div className="spec-card-head"><div><p className="mono">CALC BASIS</p><h3>계산 기준</h3></div><span>실시간 반영</span></div>
+        <div className="spec-card-head">
+          <div><p className="mono">CALC BASIS</p><h3>계산 기준</h3></div>
+          <div className="spec-head-actions"><span><i className="pulse-dot"></i>{isSupabaseConfigured ? '자동 저장' : '로컬 저장'}</span><button onClick={()=>setOpen(o=>!o)}>{open?'접기':'세팅 수정'}</button></div>
+        </div>
         <div className="spec-mini-grid compact">
           <div><span>스태미나</span><b>{Number(settings.stamina||0).toLocaleString()}</b></div>
           <div><span>어획</span><b>{result.count.toLocaleString()}회</b></div>
@@ -1751,31 +1752,33 @@ function OceanSpecSidebar({settings,setSettings}){
         </div>
         <div className="active-effect-list compact">{active.length ? active.map(x=><span key={x.name}>{x.name} {x.value}</span>) : <span>전문가 효과 기본값</span>}</div>
       </div>
-      <div className="ocean-preset-row">
-        <button onClick={()=>applyPreset({stamina:3000})}>3,000</button>
-        <button onClick={()=>applyPreset({stamina:4500})}>4,500</button>
-        <button onClick={()=>applyPreset({stamina:6000})}>6,000</button>
-      </div>
-      <div className="spec-card compact-inputs">
-        <div className="spec-form-title"><h4>자주 쓰는 설정</h4><span>핵심값만 먼저</span></div>
-        <NumField label="오늘 사용할 스태미나" value={settings.stamina} onChange={v=>set('stamina',v)}/>
-        <SelectField label="세이지 낚싯대 강화" value={settings.rodLevel} max={15} suffix="강" onChange={v=>set('rodLevel',v)}/>
-        <SelectField label="제작 시간 감소" value={settings.skillFurnace} max={5} onChange={v=>set('skillFurnace',v)}/>
-        <SelectField label="프리미엄 한정가" value={settings.skillAlchBonus} max={8} onChange={v=>set('skillAlchBonus',v)}/>
-        <SelectField label="조개 좀 사조개" value={settings.skillCraftBonus} max={8} onChange={v=>set('skillCraftBonus',v)}/>
-      </div>
-      <details className="spec-card spec-details"><summary>전문가 · 각인석 상세 설정</summary>
-        <div className="spec-subtitle">전문가</div>
-        <SelectField label="심해 채집꾼 · 어패류 추가" value={settings.skillDeepHarvest} max={5} onChange={v=>set('skillDeepHarvest',v)}/>
-        <SelectField label="별별별! · 3성 확률" value={settings.skillStarBonus} max={6} onChange={v=>set('skillStarBonus',v)}/>
-        <SelectField label="조개 무한리필 · 조개 확률" value={settings.skillClamBonus} max={10} onChange={v=>set('skillClamBonus',v)}/>
-        <div className="spec-subtitle">각인석</div>
-        <SelectField label="조개 탐색" value={settings.engClamSearch} max={3} onChange={v=>set('engClamSearch',v)}/>
-        <SelectField label="어패 행운" value={settings.engSeafoodLuck} max={4} onChange={v=>set('engSeafoodLuck',v)}/>
-        <SelectField label="어부 룰렛" value={settings.engFisherRoulette} max={5} onChange={v=>set('engFisherRoulette',v)}/>
-        <SelectField label="정령 고래" value={settings.engSpiritWhale} max={5} onChange={v=>set('engSpiritWhale',v)}/>
-      </details>
-      <p className="mini-muted">설정은 하루 수익, 연금 최적화, 재료 역산, 공예품 계산에 함께 적용됩니다.</p>
+      {open && <div className="ocean-settings-drawer">
+        <div className="ocean-preset-row">
+          <button onClick={()=>applyPreset({stamina:3000})}>3,000</button>
+          <button onClick={()=>applyPreset({stamina:4500})}>4,500</button>
+          <button onClick={()=>applyPreset({stamina:6000})}>6,000</button>
+        </div>
+        <div className="spec-card compact-inputs">
+          <div className="spec-form-title"><h4>자주 쓰는 설정</h4><span>핵심값만 먼저</span></div>
+          <NumField label="오늘 사용할 스태미나" value={settings.stamina} onChange={v=>set('stamina',v)}/>
+          <SelectField label="세이지 낚싯대 강화" value={settings.rodLevel} max={15} suffix="강" onChange={v=>set('rodLevel',v)}/>
+          <SelectField label="제작 시간 감소" value={settings.skillFurnace} max={5} onChange={v=>set('skillFurnace',v)}/>
+          <SelectField label="프리미엄 한정가" value={settings.skillAlchBonus} max={8} onChange={v=>set('skillAlchBonus',v)}/>
+          <SelectField label="조개 좀 사조개" value={settings.skillCraftBonus} max={8} onChange={v=>set('skillCraftBonus',v)}/>
+        </div>
+        <details className="spec-card spec-details"><summary>전문가 · 각인석 상세 설정</summary>
+          <div className="spec-subtitle">전문가</div>
+          <SelectField label="심해 채집꾼 · 어패류 추가" value={settings.skillDeepHarvest} max={5} onChange={v=>set('skillDeepHarvest',v)}/>
+          <SelectField label="별별별! · 3성 확률" value={settings.skillStarBonus} max={6} onChange={v=>set('skillStarBonus',v)}/>
+          <SelectField label="조개 무한리필 · 조개 확률" value={settings.skillClamBonus} max={10} onChange={v=>set('skillClamBonus',v)}/>
+          <div className="spec-subtitle">각인석</div>
+          <SelectField label="조개 탐색" value={settings.engClamSearch} max={3} onChange={v=>set('engClamSearch',v)}/>
+          <SelectField label="어패 행운" value={settings.engSeafoodLuck} max={4} onChange={v=>set('engSeafoodLuck',v)}/>
+          <SelectField label="어부 룰렛" value={settings.engFisherRoulette} max={5} onChange={v=>set('engFisherRoulette',v)}/>
+          <SelectField label="정령 고래" value={settings.engSpiritWhale} max={5} onChange={v=>set('engSpiritWhale',v)}/>
+        </details>
+        <p className="mini-muted">설정은 하루 수익, 연금 최적화, 재료 역산, 공예품 계산에 함께 적용됩니다.</p>
+      </div>}
     </div>
   </aside>;
 }
