@@ -314,7 +314,7 @@ function App(){
       merged[row.feature_key] = {
         feature_key: row.feature_key,
         is_locked: !!row.is_locked,
-        message: row.message || '현재 점검중입니다.',
+        message: row.message || '현재 점검 중입니다.',
         updated_at: row.updated_at || null
       };
     }
@@ -322,7 +322,7 @@ function App(){
   }
 
   async function login(agreement){
-    if(!isSupabaseConfigured){ alert('.env 파일에 Supabase 값을 넣어주세요.'); return; }
+    if(!isSupabaseConfigured){ alert('.env 파일에 Supabase 값을 넣어 주세요.'); return; }
     if(agreement){
       try {
         localStorage.setItem('dding_pending_agreement', JSON.stringify({
@@ -410,7 +410,7 @@ function LoginScreen({login,theme,setTheme}){
     setLegalModal(null);
   };
   function startLogin(){
-    if(!canStart){ setMessage('가입 전 필수 안내를 먼저 확인해주세요.'); return; }
+    if(!canStart){ setMessage('가입 전 필수 안내를 먼저 확인해 주세요.'); return; }
     login(agreements);
   }
   return <main className="login-screen">
@@ -492,7 +492,7 @@ function LegalConsentModal({type,onClose,onConfirm}){
           <p>{body}</p>
         </section>)}
       </div>
-      <p className="legal-modal-date">공고 및 시행일자: 2026년 5월 20일</p>
+      <p className="legal-modal-date">공고 및 시행 일자: 2026년 5월 20일</p>
       <div className="modal-actions legal-modal-actions">
         <button type="button" className="ghost" onClick={onClose}>닫기</button>
         <button type="button" className="primary" onClick={onConfirm}>{isPrivacy ? '동의하고 닫기' : '확인하고 닫기'}</button>
@@ -621,10 +621,10 @@ function Topbar({current,user,profile,logout,theme,setTheme}){
 
 const EXPERT_LABELS = { mining:'채광', farming:'재배', ocean:'해양', hunting:'사냥' };
 const defaultFeatureLocks = {
-  mining: {feature_key:'mining', is_locked:false, message:'채광 콘텐츠는 현재 점검중입니다.', updated_at:null},
-  farming: {feature_key:'farming', is_locked:false, message:'재배 콘텐츠는 현재 점검중입니다.', updated_at:null},
-  ocean: {feature_key:'ocean', is_locked:false, message:'해양 콘텐츠는 현재 점검중입니다.', updated_at:null},
-  hunting: {feature_key:'hunting', is_locked:false, message:'사냥 콘텐츠는 현재 점검중입니다.', updated_at:null},
+  mining: {feature_key:'mining', is_locked:false, message:'채광 콘텐츠는 현재 점검 중입니다.', updated_at:null},
+  farming: {feature_key:'farming', is_locked:false, message:'재배 콘텐츠는 현재 점검 중입니다.', updated_at:null},
+  ocean: {feature_key:'ocean', is_locked:false, message:'해양 콘텐츠는 현재 점검 중입니다.', updated_at:null},
+  hunting: {feature_key:'hunting', is_locked:false, message:'사냥 콘텐츠는 현재 점검 중입니다.', updated_at:null},
 };
 
 const CATEGORY_META = {
@@ -640,7 +640,7 @@ function CategoryPlaceholder({current,profile}){
   return <section className="placeholder-page">
     <div className="page-title"><h1>{title}</h1><p>{desc}</p></div>
     <article className="placeholder-card locked-placeholder">
-      <p className="mono">현재 준비중</p>
+      <p className="mono">현재 준비 중</p>
       <h2>아직 일반 유저에게 공개되지 않은 페이지입니다.</h2>
       <p>{isAdmin ? '관리자 계정으로 확인 중입니다. 추후 기능이 준비되면 공개할 수 있습니다.' : '콘텐츠 준비가 완료되면 이용할 수 있습니다.'}</p>
     </article>
@@ -651,12 +651,12 @@ function MaintenancePage({featureKey, lock}){
   const label = EXPERT_LABELS[featureKey] || '전문가';
   return <section className="maintenance-page">
     <div className="compact-page-header">
-      <div><p className="mono">MAINTENANCE</p><h1>{label} 점검중</h1><p>{lock?.message || `${label} 콘텐츠는 현재 점검중입니다.`}</p></div>
+      <div><p className="mono">MAINTENANCE</p><h1>{label} 점검 중</h1><p>{lock?.message || `${label} 콘텐츠는 현재 점검 중입니다.`}</p></div>
     </div>
     <article className="maintenance-card">
-      <span className="maintenance-badge">점검중</span>
+      <span className="maintenance-badge">점검 중</span>
       <h2>{label} 콘텐츠를 잠시 사용할 수 없습니다.</h2>
-      <p>관리자가 해당 전문가 페이지를 점검중으로 전환했습니다. 시세, 프로필, 공지사항, 다운로드 등 다른 기능은 계속 사용할 수 있습니다.</p>
+      <p>관리자가 해당 전문가 페이지를 점검 중으로 전환했습니다. 시세, 프로필, 공지사항, 다운로드 등 다른 기능은 계속 사용할 수 있습니다.</p>
       {lock?.updated_at && <small>마지막 변경: {new Date(lock.updated_at).toLocaleString('ko-KR')}</small>}
       <button className="primary" onClick={()=>go('#/market')}>시세표로 돌아가기</button>
     </article>
@@ -754,7 +754,7 @@ function BulkPriceModal({title,items,user,onClose,reload}){
       });
 
       if(rpcError){
-        setMessage(rpcError.message + ' · supabase/schema.sql을 최신 버전으로 다시 실행해주세요.');
+        setMessage(rpcError.message + ' · supabase/schema.sql을 최신 버전으로 다시 실행해 주세요.');
         return;
       }
     }
@@ -852,7 +852,7 @@ function FeatureLockPanel({locks,reload}){
   async function toggleLock(key){
     if(!isSupabaseConfigured){ alert('Supabase 연결 후 사용할 수 있습니다.'); return; }
     const current = !!locks?.[key]?.is_locked;
-    const message = locks?.[key]?.message || `${EXPERT_LABELS[key]} 콘텐츠는 현재 점검중입니다.`;
+    const message = locks?.[key]?.message || `${EXPERT_LABELS[key]} 콘텐츠는 현재 점검 중입니다.`;
     setSaving(key);
     const {error:rpcError}=await supabase.rpc('set_feature_lock', {
       target_feature_key: key,
@@ -866,7 +866,7 @@ function FeatureLockPanel({locks,reload}){
         message,
         updated_at:new Date().toISOString()
       }, {onConflict:'feature_key'});
-      if(error){ alert(error.message + '\n\nsupabase/schema.sql을 다시 실행했는지 확인해주세요.'); setSaving(''); return; }
+      if(error){ alert(error.message + '\n\nsupabase/schema.sql을 다시 실행했는지 확인해 주세요.'); setSaving(''); return; }
     }
     await reload?.();
     setSaving('');
@@ -883,9 +883,9 @@ function FeatureLockPanel({locks,reload}){
       {Object.keys(defaultFeatureLocks).map(key=>{
         const row = locks?.[key] || defaultFeatureLocks[key];
         return <div className={`feature-lock-row ${row.is_locked ? 'locked' : ''}`} key={key}>
-          <div><b>{EXPERT_LABELS[key]}</b><span>{row.is_locked ? '점검중' : '공개중'}</span></div>
+          <div><b>{EXPERT_LABELS[key]}</b><span>{row.is_locked ? '점검 중' : '공개 중'}</span></div>
           <input defaultValue={row.message || ''} onBlur={e=>updateMessage(key, e.target.value)} placeholder={`${EXPERT_LABELS[key]} 점검 안내 문구`} />
-          <button className={row.is_locked ? 'ghost' : 'danger-soft'} disabled={saving===key} onClick={()=>toggleLock(key)}>{saving===key ? '저장중...' : row.is_locked ? '잠금 해제' : '점검 잠금'}</button>
+          <button className={row.is_locked ? 'ghost' : 'danger-soft'} disabled={saving===key} onClick={()=>toggleLock(key)}>{saving===key ? '저장 중...' : row.is_locked ? '잠금 해제' : '점검 잠금'}</button>
         </div>;
       })}
     </div>
@@ -911,7 +911,7 @@ function NoticePage({user,profile,notices,reload}){
     const {error:rpcError}=await supabase.rpc('delete_notice', {notice_id:id});
     if(rpcError){
       const {error}=await supabase.from('notices').delete().eq('id',id);
-      if(error){ alert(error.message + '\n\nsupabase/schema.sql을 다시 실행했는지 확인해주세요.'); return; }
+      if(error){ alert(error.message + '\n\nsupabase/schema.sql을 다시 실행했는지 확인해 주세요.'); return; }
     }
     await reload();
   }
@@ -935,14 +935,14 @@ function NoticeModal({user,onClose,reload}){
   const [content,setContent]=useState('');
   const [message,setMessage]=useState('');
   async function save(){
-    if(!title.trim()){ setMessage('제목을 입력해주세요.'); return; }
+    if(!title.trim()){ setMessage('제목을 입력해 주세요.'); return; }
     const {error:rpcError}=await supabase.rpc('create_notice', {
       notice_title:title.trim(),
       notice_content:content.trim()
     });
     if(rpcError){
       const {error}=await supabase.from('notices').insert({title:title.trim(),content:content.trim(),created_by:user.id,is_published:true});
-      if(error){ setMessage(error.message + ' · supabase/schema.sql을 다시 실행했는지 확인해주세요.'); return; }
+      if(error){ setMessage(error.message + ' · supabase/schema.sql을 다시 실행했는지 확인해 주세요.'); return; }
     }
     await reload();
     onClose();
@@ -972,7 +972,7 @@ function DownloadPage({user,profile,downloads,reload,modVersion=DEFAULT_MOD_VERS
     await reload();
   }
   function doDownload(item){
-    if(!item?.file_data){ alert('다운로드 파일 데이터가 없습니다. 관리자에게 문의해주세요.'); return; }
+    if(!item?.file_data){ alert('다운로드 파일 데이터가 없습니다. 관리자에게 문의해 주세요.'); return; }
     const a=document.createElement('a');
     a.href=item.file_data;
     a.download=item.file_name || item.title || 'download';
@@ -1047,10 +1047,10 @@ function ModVersionModal({user,version,onClose,reload}){
   const [saving,setSaving]=useState(false);
   const update = (key,value) => setForm(prev=>({...prev,[key]:value}));
   async function save(){
-    if(!isSupabaseConfigured){ setMessage('.env 파일에 Supabase 값을 넣어주세요.'); return; }
-    if(!form.latestVersion.trim()){ setMessage('최신 버전을 입력해주세요.'); return; }
-    if(!form.minecraftVersion.trim()){ setMessage('지원 Minecraft 버전을 입력해주세요.'); return; }
-    if(!form.downloadUrl.trim()){ setMessage('다운로드 페이지 URL을 입력해주세요.'); return; }
+    if(!isSupabaseConfigured){ setMessage('.env 파일에 Supabase 값을 넣어 주세요.'); return; }
+    if(!form.latestVersion.trim()){ setMessage('최신 버전을 입력해 주세요.'); return; }
+    if(!form.minecraftVersion.trim()){ setMessage('지원 Minecraft 버전을 입력해 주세요.'); return; }
+    if(!form.downloadUrl.trim()){ setMessage('다운로드 페이지 URL을 입력해 주세요.'); return; }
     try { new URL(form.downloadUrl.trim()); }
     catch { setMessage('다운로드 URL 형식이 올바르지 않습니다.'); return; }
 
@@ -1068,7 +1068,7 @@ function ModVersionModal({user,version,onClose,reload}){
       updated_by:user.id
     }, { onConflict:'id' });
     setSaving(false);
-    if(error){ setMessage(error.message + ' · supabase/schema.sql을 다시 실행했는지 확인해주세요.'); return; }
+    if(error){ setMessage(error.message + ' · supabase/schema.sql을 다시 실행했는지 확인해 주세요.'); return; }
     await reload?.();
     onClose();
   }
@@ -1101,15 +1101,15 @@ function DownloadModal({user,onClose,reload}){
     return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(f); });
   }
   async function save(){
-    if(!isSupabaseConfigured){ setMessage('.env 파일에 Supabase 값을 넣어주세요.'); return; }
-    if(!title.trim()){ setMessage('제목을 입력해주세요.'); return; }
-    if(!file){ setMessage('파일을 선택해주세요.'); return; }
+    if(!isSupabaseConfigured){ setMessage('.env 파일에 Supabase 값을 넣어 주세요.'); return; }
+    if(!title.trim()){ setMessage('제목을 입력해 주세요.'); return; }
+    if(!file){ setMessage('파일을 선택해 주세요.'); return; }
     if(file.size > MAX_DOWNLOAD_BYTES){ setMessage(`베타에서는 ${formatFileSize(MAX_DOWNLOAD_BYTES)} 이하 파일만 업로드할 수 있습니다.`); return; }
     const fileData=await toDataURL(file);
     const {error}=await supabase.from('downloads').insert({
       title:title.trim(), description:description.trim(), file_name:file.name, file_type:file.type || 'application/octet-stream', file_size:file.size, file_data:fileData, created_by:user.id
     });
-    if(error){ setMessage(error.message + ' · supabase/schema.sql을 다시 실행했는지 확인해주세요.'); return; }
+    if(error){ setMessage(error.message + ' · supabase/schema.sql을 다시 실행했는지 확인해 주세요.'); return; }
     await reload(); onClose();
   }
   return <div className="modal-backdrop" role="dialog" aria-modal="true">
@@ -1186,7 +1186,7 @@ function ModPolicyPage(){
     <article className="privacy-card policy-note-card">
       <h2>운영 고지</h2>
       <p>DDING PLUG는 정보 제공 및 시세 공유를 위한 도구이며, 자동 플레이·자동 판매·서버 조작 기능을 제공하지 않습니다. 공용 시세에는 서버 전체 참고에 적합한 기본 판매가만 반영합니다.</p>
-      <p className="policy-date">공고 및 시행일자: 2026년 5월 20일</p>
+      <p className="policy-date">공고 및 시행 일자: 2026년 5월 20일</p>
     </article>
   </section>;
 }
@@ -1248,7 +1248,7 @@ function PrivacyPage(){
     <article className="privacy-card policy-note-card">
       <h2>보안 및 문의</h2>
       <p>DDING PLUG는 인증과 데이터 저장을 위해 Supabase Auth 및 Database를 사용합니다. 개인정보 관련 문의는 사이트 운영자에게 연락해 주세요.</p>
-      <p className="policy-date">공고 및 시행일자: 2026년 5월 20일</p>
+      <p className="policy-date">공고 및 시행 일자: 2026년 5월 20일</p>
     </article>
   </section>;
 }
@@ -1285,8 +1285,8 @@ function ProfileSetupGate({user,profile,setProfile}){
   }
 
   async function completeProfile(){
-    if(!nickname){ setStatus('띵타이쿤 한글 닉네임을 입력해주세요.'); return; }
-    if(!validMinecraft){ setStatus('마인크래프트 아이디는 영문, 숫자, 언더스코어 3~16자로 입력해주세요.'); return; }
+    if(!nickname){ setStatus('띵타이쿤 한글 닉네임을 입력해 주세요.'); return; }
+    if(!validMinecraft){ setStatus('마인크래프트 아이디는 영문, 숫자, 언더스코어 3~16자로 입력해 주세요.'); return; }
     setSaving(true);
     const now = new Date().toISOString();
     const payload = {
@@ -1314,7 +1314,7 @@ function ProfileSetupGate({user,profile,setProfile}){
     <div className="page-title onboarding-title">
       <div>
         <p className="mono">PROFILE SETUP</p>
-        <h1>프로필을 먼저 설정해주세요.</h1>
+        <h1>프로필을 먼저 설정해 주세요.</h1>
         <p>시세 수정자 표시와 모드/API 제보 연결을 위해 기본 프로필이 필요합니다.</p>
       </div>
     </div>
@@ -1335,7 +1335,7 @@ function ProfileSetupGate({user,profile,setProfile}){
         <label>
           <span>마인크래프트 아이디</span>
           <input className={minecraftReady ? '' : 'invalid'} value={form.minecraft_id} onChange={e=>change('minecraft_id',e.target.value)} placeholder="영문/숫자/언더스코어" maxLength={16}/>
-          <small className={minecraftReady ? '' : 'error'}>영문, 숫자, 언더스코어 3~16자로 입력해주세요.</small>
+          <small className={minecraftReady ? '' : 'error'}>영문, 숫자, 언더스코어 3~16자로 입력해 주세요.</small>
         </label>
         <div className="profile-legal-note">
           <b>안내 확인</b>
@@ -1676,7 +1676,7 @@ function OceanStaminaCalculatorV3({settings}){
   const v=getOceanSkillValues(settings);
   const breakdown=[['낚싯대 기본 드롭',`${r.rod.seafoodDrop||0}개/회`],['심해 채집꾼',`+${v.deepHarvest}%`],['어패 행운',v.seafoodLuck?.pct?`${v.seafoodLuck.pct}% 확률 +${v.seafoodLuck.count}개`:'미적용'],['어부 룰렛',`${v.fisherRoulette}%`],['조개 관련',`${r.rod.clamPct||0}% + 스킬/각인 ${v.clamBonus+v.clamSearch}%`]];
   return <div className="ocean-calc-layout v21">
-    <article className="ocean-card compact-card"><h2>하루 수익 요약</h2><div className="result-grid compact"><Metric title="진행 횟수" value={`${r.count.toLocaleString()}회`} accent/><Metric title="회당 기대" value={`${oceanNum(r.perCatch)}개`}/><Metric title="스태미나당" value={`${oceanNum(r.total/(Number(settings.stamina)||1),3)}개`}/></div><details className="detail-box"><summary>상세보기</summary><div className="ocean-breakdown compact">{breakdown.map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</div></details></article>
+    <article className="ocean-card compact-card"><h2>하루 수익 요약</h2><div className="result-grid compact"><Metric title="진행 횟수" value={`${r.count.toLocaleString()}회`} accent/><Metric title="회당 기대" value={`${oceanNum(r.perCatch)}개`}/><Metric title="스태미나당" value={`${oceanNum(r.total/(Number(settings.stamina)||1),3)}개`}/></div><details className="detail-box"><summary>상세 보기</summary><div className="ocean-breakdown compact">{breakdown.map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</div></details></article>
     <article className="ocean-card compact-card"><h2>예상 획득량</h2><div className="result-grid compact"><Metric title="보수" value={formatOceanQty(conservative)}/><Metric title="보통" value={formatOceanQty(r.total)} accent/><Metric title="낙관" value={formatOceanQty(optimistic)}/></div><div className="ocean-breakdown compact"><h3>성급 분포</h3><div><span>1성</span><b>{formatOceanQty(r.tiers[1])}</b></div><div><span>2성</span><b>{formatOceanQty(r.tiers[2])}</b></div><div><span>3성</span><b>{formatOceanQty(r.tiers[3])}</b></div><div><span>알쏭달쏭 조개</span><b>{oceanNum(r.clamDrop,1)}개</b></div><div><span>정령 고래</span><b>{oceanNum(r.whale,2)}회</b></div></div></article>
   </div>;
 }
@@ -1727,7 +1727,7 @@ function OceanAlchemyCalculatorV3({settings,setSettings}){
       <h3 className="subheading">추천 제작 리스트</h3>
       <div className="alchemy-list dense">{plan.entries.length ? plan.entries.slice(0,6).map((e,i)=><AlchemyResultRow key={e.key} entry={e} rank={i+1}/>) : <p className="muted">입력된 어패류로 제작 가능한 연금품이 없습니다.</p>}</div>
       <div className="split-result"><RemainSeafood remain={plan.remain}/>{plan.shortage?.length ? <NeedSection title="부족한 대표 어패류" data={Object.fromEntries(plan.shortage.map(x=>[x.key, x.need-x.have]))} labeler={seafoodLabel}/> : null}</div>
-      <details className="detail-box" open={showDetail} onToggle={e=>setShowDetail(e.currentTarget.open)}><summary>상세보기</summary><div className="why-box"><b>왜 이 조합인가요?</b><p>{plan.entries[0] ? explainOptimizerChoice(plan.entries[0]) : '제작 가능한 후보가 없어 최적 조합을 만들 수 없습니다.'}</p><p>기본 기준은 순수익 최대화이며, 같은 순수익이면 남는 어패류가 적은 조합을 우선합니다.</p></div><NeedSection title="계산에 포함된 바닐라 재료" data={aggregateVanillaNeed(plan.entries)} labeler={getVanillaName}/><DataMissingBox/></details>
+      <details className="detail-box" open={showDetail} onToggle={e=>setShowDetail(e.currentTarget.open)}><summary>상세 보기</summary><div className="why-box"><b>왜 이 조합인가요?</b><p>{plan.entries[0] ? explainOptimizerChoice(plan.entries[0]) : '제작 가능한 후보가 없어 최적 조합을 만들 수 없습니다.'}</p><p>기본 기준은 순수익 최대화이며, 같은 순수익이면 남는 어패류가 적은 조합을 우선합니다.</p></div><NeedSection title="계산에 포함된 바닐라 재료" data={aggregateVanillaNeed(plan.entries)} labeler={getVanillaName}/><DataMissingBox/></details>
     </aside>
   </div>;
 }
@@ -1749,7 +1749,7 @@ function OceanMaterialCalculatorV3({settings}){
   const reduce=(getOceanSkillValues(settings).furnaceReduce||0)/100;
   const lackMap=(data)=>Object.fromEntries(Object.entries(data||{}).map(([k,v])=>[k,Math.max(0,Number(v||0)-Number(have[k]||0))]).filter(([,v])=>v>0));
   const copy=()=>navigator.clipboard?.writeText(Object.entries({...need.seafood,...need.vanilla}).map(([k,v])=>`${isSeafoodKey(k)?seafoodLabel(k):getVanillaName(k)} ${oceanNum(v)}`).join('\n'));
-  return <div className="ocean-calc-layout v21"><article className="ocean-card compact-card"><h2>목표 설정</h2><div className="form-grid two"><label className="calc-field"><span>목표 연금품</span><select value={target} onChange={e=>setTarget(e.target.value)}>{Object.entries(PRECISION_ALCHEMY_CFG).map(([k,v])=><option key={k} value={k}>{v.name}</option>)}</select></label><NumField label="목표 수량" value={qty} onChange={setQty}/></div><div className="ocean-comment compact"><b>제작 시간 감소 적용</b><p>Lv.{settings.skillFurnace} · -{getOceanSkillValues(settings).furnaceReduce}%</p></div><button className="ghost-pill" onClick={copy}>결과 복사</button></article><article className="ocean-card compact-card"><h2>{need.name} {Number(qty||0).toLocaleString()}개 필요 재료</h2><div className="result-grid compact"><Metric title="기본 제작 시간" value={formatOceanTime(need.time)}/><Metric title="전문가 적용" value={formatOceanTime(need.time*(1-reduce))} accent/><Metric title="중간 재료" value={`${Object.keys(need.intermediate).length}종`}/></div><NeedSection title="부족 어패류" data={lackMap(need.seafood)} labeler={seafoodLabel}/><NeedSection title="필요 바닐라 재료" data={need.vanilla} labeler={getVanillaName}/><NeedSection title="중간 제작 단계" data={need.intermediate} labeler={(k)=>ALCHEMY_CFG[k]?.name || k}/><details className="detail-box"><summary>상세보기</summary><DataMissingBox/></details></article></div>;
+  return <div className="ocean-calc-layout v21"><article className="ocean-card compact-card"><h2>목표 설정</h2><div className="form-grid two"><label className="calc-field"><span>목표 연금품</span><select value={target} onChange={e=>setTarget(e.target.value)}>{Object.entries(PRECISION_ALCHEMY_CFG).map(([k,v])=><option key={k} value={k}>{v.name}</option>)}</select></label><NumField label="목표 수량" value={qty} onChange={setQty}/></div><div className="ocean-comment compact"><b>제작 시간 감소 적용</b><p>Lv.{settings.skillFurnace} · -{getOceanSkillValues(settings).furnaceReduce}%</p></div><button className="ghost-pill" onClick={copy}>결과 복사</button></article><article className="ocean-card compact-card"><h2>{need.name} {Number(qty||0).toLocaleString()}개 필요 재료</h2><div className="result-grid compact"><Metric title="기본 제작 시간" value={formatOceanTime(need.time)}/><Metric title="전문가 적용" value={formatOceanTime(need.time*(1-reduce))} accent/><Metric title="중간 재료" value={`${Object.keys(need.intermediate).length}종`}/></div><NeedSection title="부족 어패류" data={lackMap(need.seafood)} labeler={seafoodLabel}/><NeedSection title="필요 바닐라 재료" data={need.vanilla} labeler={getVanillaName}/><NeedSection title="중간 제작 단계" data={need.intermediate} labeler={(k)=>ALCHEMY_CFG[k]?.name || k}/><details className="detail-box"><summary>상세 보기</summary><DataMissingBox/></details></article></div>;
 }
 function NeedSection({title,data,labeler}){ const rows=Object.entries(data||{}).filter(([,v])=>v>0.0001); return <div className="ocean-breakdown compact"><h3>{title}</h3>{rows.length ? rows.map(([k,v])=><div key={k}><span>{labeler(k)}</span><b>{isSeafoodKey(k)?formatOceanQty(v):oceanNum(v)}</b></div>) : <p className="muted">필요 없음</p>}</div>; }
 
@@ -1762,7 +1762,7 @@ function OceanCraftCalculatorV3({settings,prices}){
   return <div className="ocean-calc-layout v21"><article className="ocean-card compact-card"><h2>보유 재료</h2><p className="muted">조개 좀 사조개 Lv.{settings.skillCraftBonus}이 적용 전/후 비교에 자동 반영됩니다.</p><div className="form-grid two"><NumField label="깨진 조개껍데기" value={form.shell} onChange={v=>set('shell',v)}/>{Object.entries(pearlMap).map(([k,n])=><NumField key={k} label={n} value={form[k]} onChange={v=>set(k,v)}/>)}</div></article><article className="ocean-card compact-card"><h2>제작 가능 공예품</h2>{best && <div className="why-box"><b>추천 제작</b><p>{best.name}이 현재 보유 재료와 입력 시세 기준 가장 높은 예상 가치를 가집니다.</p></div>}<div className="craft-card-list">{rows.map((r,i)=><CraftResultCard key={r.key} row={r} rank={i+1}/>)}</div></article></div>;
 }
 function CraftResultCard({row,rank}){
-  return <div className="craft-result-card"><div className="craft-result-head"><span className="rank-dot">{rank}</span><div><b>{row.name}</b><small>현재가 {oceanMoney(row.currentPrice)} · 최고가 {oceanMoney(row.max)} · {row.percent}%</small></div><strong>{oceanMoney(row.total)}</strong></div><div className="craft-price-line"><span>기본 제작 판매가 {oceanMoney(row.basePrice)}</span><span>{row.expertPrice===row.basePrice?'전문가 적용 동일':`전문가 적용 ${oceanMoney(row.expertPrice)}`}</span><span>제작 가능 {row.qty.toLocaleString()}개</span></div><div className="craft-materials">{row.materials.map(m=><span key={m.key} className={!m.tracked?'untracked':''}><i className="material-icon-slot" aria-hidden="true"></i>{getMaterialDisplayName(m.key)} <b>x{oceanNum(m.qty)}</b></span>)}</div>{row.lack.length ? <em className="craft-lack">부족: {row.lack.map(x=>`${x.name} ${oceanNum(x.lack)}`).join(', ')}</em> : null}<details className="detail-box compact-detail"><summary>상세보기</summary><div className="data-missing"><p>아이콘 없음, 가격 없음, 제작 시간 없음 같은 검수용 정보는 여기서만 확인합니다. 추적 불가 재료: {row.materials.filter(m=>!m.tracked).map(m=>getMaterialDisplayName(m.key)).join(', ') || '없음'}</p></div></details></div>;
+  return <div className="craft-result-card"><div className="craft-result-head"><span className="rank-dot">{rank}</span><div><b>{row.name}</b><small>현재가 {oceanMoney(row.currentPrice)} · 최고가 {oceanMoney(row.max)} · {row.percent}%</small></div><strong>{oceanMoney(row.total)}</strong></div><div className="craft-price-line"><span>기본 제작 판매가 {oceanMoney(row.basePrice)}</span><span>{row.expertPrice===row.basePrice?'전문가 적용 동일':`전문가 적용 ${oceanMoney(row.expertPrice)}`}</span><span>제작 가능 {row.qty.toLocaleString()}개</span></div><div className="craft-materials">{row.materials.map(m=><span key={m.key} className={!m.tracked?'untracked':''}><i className="material-icon-slot" aria-hidden="true"></i>{getMaterialDisplayName(m.key)} <b>x{oceanNum(m.qty)}</b></span>)}</div>{row.lack.length ? <em className="craft-lack">부족: {row.lack.map(x=>`${x.name} ${oceanNum(x.lack)}`).join(', ')}</em> : null}<details className="detail-box compact-detail"><summary>상세 보기</summary><div className="data-missing"><p>아이콘 없음, 가격 없음, 제작 시간 없음 같은 검수용 정보는 여기서만 확인합니다. 추적 불가 재료: {row.materials.filter(m=>!m.tracked).map(m=>getMaterialDisplayName(m.key)).join(', ') || '없음'}</p></div></details></div>;
 }
 function NumField({label,value,onChange}){ return <label className="calc-field"><span>{label}</span><input type="number" inputMode="numeric" min="0" value={value} onChange={e=>onChange(e.target.value)} /></label>; }
 function SelectField({label,value,max,onChange,suffix='Lv.'}){ return <label className="calc-field"><span>{label}</span><select value={value} onChange={e=>onChange(e.target.value)}>{Array.from({length:max+1},(_,i)=><option key={i} value={i}>{suffix === '강' ? `+${i}` : `${suffix} ${i}`}</option>)}</select></label>; }
@@ -1810,7 +1810,7 @@ function RecipeCard({row}){
     <div className="recipe-main"><div className="recipe-title-line"><b>{row.name}</b><span>{row.kind || getRecipeKind(row)}</span></div>
       <div className="recipe-meta"><span>{row.category}</span><span>결과 {row.output || 1}개</span><span>{row.time == null ? '제작 시간 미확정' : `제작 시간 ${formatOceanTime(row.time)}`}</span></div>
       <div className="recipe-mats">{mats.length ? mats.map(([k,v])=><span key={k}><i className="material-icon-slot" aria-hidden="true"></i>{getMaterialName(k)} <b>x{oceanNum(v)}</b></span>) : <span>재료 데이터 필요</span>}</div>
-      <details className="detail-box"><summary>상세보기</summary><div className="data-missing"><b>데이터 상태</b><p>출처: {row.source}. 아이콘, 획득처, 일부 시세는 미연결 상태일 수 있습니다.</p>{missingNames.length ? <p>한글명 데이터 필요: {missingNames.map(([k])=>k).join(', ')}</p> : null}</div></details>
+      <details className="detail-box"><summary>상세 보기</summary><div className="data-missing"><b>데이터 상태</b><p>출처: {row.source}. 아이콘, 획득처, 일부 시세는 미연결 상태일 수 있습니다.</p>{missingNames.length ? <p>한글명 데이터 필요: {missingNames.map(([k])=>k).join(', ')}</p> : null}</div></details>
     </div>
   </article>;
 }
@@ -1843,7 +1843,7 @@ function Profile({user,profile,setProfile}){
         <div className="joined"><span>가입일</span><b>{new Date(profile?.created_at || Date.now()).toLocaleDateString('ko-KR')}</b></div>
       </article>
       <article className="profile-form panel-card">
-        <h2>프로필을 입력해주세요.</h2>
+        <h2>프로필을 입력해 주세요.</h2>
         <label>띵타이쿤 한글 닉네임<input value={form.korean_nickname} onChange={e=>change('korean_nickname',e.target.value)} placeholder=""/></label>
         <label>마인크래프트 아이디<input value={form.minecraft_id} onChange={e=>{
           // [SECURITY FIX] minecraft_id: 영문·숫자·언더스코어만, 최대 16자 (Mojang 규격)
