@@ -379,7 +379,20 @@ function App(){
         : current === 'notice'
           ? <NoticePage user={user} profile={profile} notices={notices} reload={loadNotices}/>
           : current === 'admin'
-            ? <AdminPage profile={profile} logs={logs} reloadLogs={loadLogs} featureLocks={featureLocks} reloadLocks={loadFeatureLocks}/>
+            ? <AdminPage
+                user={user}
+                profile={profile}
+                logs={logs}
+                reloadLogs={loadLogs}
+                featureLocks={featureLocks}
+                reloadLocks={loadFeatureLocks}
+                downloads={downloads}
+                reloadDownloads={loadDownloads}
+                notices={notices}
+                reloadNotices={loadNotices}
+                modVersion={modVersion}
+                reloadModVersion={loadModVersion}
+              />
           : current === 'home'
             ? <MarketDesk current="market" items={prices} user={user} profile={profile} logs={logs} reload={()=>{loadPrices(); loadLogs();}} />
           : activeExpertKey && activeExpertLock?.is_locked && !isAdminUser
@@ -828,18 +841,84 @@ function LogRow({log,label}){
   </div>;
 }
 
-function AdminPage({profile,logs,reloadLogs,featureLocks,reloadLocks}){
+function AdminPage({user,profile,logs,reloadLogs,featureLocks,reloadLocks,downloads=[],reloadDownloads,notices=[],reloadNotices,modVersion=DEFAULT_MOD_VERSION,reloadModVersion}){
   const isAdmin = ['owner','admin'].includes(profile?.role);
+  const [versionOpen,setVersionOpen]=useState(false);
+  const [downloadOpen,setDownloadOpen]=useState(false);
+  const [noticeOpen,setNoticeOpen]=useState(false);
   if(!isAdmin){
     return <section className="placeholder-page"><div className="page-title"><h1>관리자</h1><p>관리자만 접근할 수 있습니다.</p></div></section>;
   }
+  const version = normalizeModVersion(modVersion);
+  const lockRows = Object.keys(defaultFeatureLocks).map(key=>locksOrDefault(featureLocks, key));
+  const lockedCount = lockRows.filter(row=>row.is_locked).length;
+  const todayCount = logs.filter(log=>Date.now() - new Date(log.created_at).getTime() < 24 * 60 * 60 * 1000).length;
+  const latestDownloads = downloads.slice(0,3);
+  async function refreshAll(){
+    await Promise.all([reloadLogs?.(), reloadLocks?.(), reloadDownloads?.(), reloadNotices?.(), reloadModVersion?.()]);
+  }
   return <section className="admin-page">
     <div className="page-title admin-title">
-      <div><h1>관리자</h1><p>전문가 페이지 점검 상태와 전체 시세 수정 로그를 관리합니다.</p></div>
-      <button className="edit-badge" onClick={()=>{reloadLogs?.(); reloadLocks?.();}}>새로고침</button>
+      <div><p className="mono">ADMIN CONSOLE</p><h1>관리자</h1><p>버전, 다운로드, 공지, 점검 상태와 시세 로그를 한 곳에서 관리합니다.</p></div>
+      <button className="edit-badge" onClick={refreshAll}>전체 새로고침</button>
     </div>
-    <FeatureLockPanel locks={featureLocks} reload={reloadLocks}/>
+
+    <div className="admin-overview-grid">
+      <article className="admin-status-card">
+        <span>모드 최신 버전</span>
+        <b>v{version.latestVersion}</b>
+        <p>{version.required ? '필수 업데이트 상태' : version.releaseNote || '릴리즈 노트 없음'}</p>
+      </article>
+      <article className="admin-status-card">
+        <span>다운로드 자료</span>
+        <b>{downloads.length.toLocaleString()}개</b>
+        <p>{latestDownloads[0]?.title || '등록된 자료 없음'}</p>
+      </article>
+      <article className="admin-status-card">
+        <span>점검 잠금</span>
+        <b>{lockedCount.toLocaleString()}개</b>
+        <p>{lockedCount ? '잠긴 전문가 페이지가 있습니다.' : '모든 전문가 페이지 공개 중'}</p>
+      </article>
+      <article className="admin-status-card">
+        <span>최근 24시간 수정</span>
+        <b>{todayCount.toLocaleString()}건</b>
+        <p>전체 로그 {logs.length.toLocaleString()}건</p>
+      </article>
+    </div>
+
+    <div className="admin-command-grid">
+      <article className="admin-command-card">
+        <div><p className="mono">RELEASE</p><h2>모드 배포 관리</h2><p>모드 UI에서 확인하는 최신 버전과 릴리즈 노트를 수정합니다.</p></div>
+        <div className="admin-command-actions">
+          <button className="primary" onClick={()=>setVersionOpen(true)}>버전 정보 수정</button>
+          <button className="ghost" onClick={()=>go('#/download')}>다운로드 페이지 보기</button>
+        </div>
+      </article>
+      <article className="admin-command-card">
+        <div><p className="mono">CONTENT</p><h2>자료와 공지</h2><p>jar 파일이나 안내 자료를 올리고, 공지사항을 바로 작성합니다.</p></div>
+        <div className="admin-command-actions">
+          <button className="primary" onClick={()=>setDownloadOpen(true)}>자료 업로드</button>
+          <button className="ghost" onClick={()=>setNoticeOpen(true)}>공지 작성</button>
+        </div>
+      </article>
+    </div>
+
+    <div className="admin-workspace-grid">
+      <FeatureLockPanel locks={featureLocks} reload={reloadLocks}/>
+      <article className="admin-side-card">
+        <div className="admin-side-head"><p className="mono">RECENT FILES</p><h2>최근 자료</h2></div>
+        <div className="admin-file-list">
+          {latestDownloads.length ? latestDownloads.map(item=><div className="admin-file-row" key={item.id}>
+            <b>{item.title}</b>
+            <span>{item.file_name || '파일명 없음'} · {formatFileSize(item.file_size)}</span>
+          </div>) : <p className="muted">아직 등록된 다운로드 자료가 없습니다.</p>}
+        </div>
+        <button className="ghost admin-wide-button" onClick={()=>go('#/download')}>자료 관리로 이동</button>
+      </article>
+    </div>
+
     <article className="admin-log-card">
+      <div className="admin-side-head admin-log-title"><p className="mono">PRICE LOGS</p><h2>시세 수정 로그</h2></div>
       <div className="admin-log-head">
         <span>변경자</span><span>품목</span><span>변경 내용</span><span>시간</span>
       </div>
@@ -848,7 +927,14 @@ function AdminPage({profile,logs,reloadLogs,featureLocks,reloadLocks}){
         {!logs.length && <p className="muted admin-empty">아직 시세 변경 기록이 없습니다.</p>}
       </div>
     </article>
+    {versionOpen && <ModVersionModal user={user} version={version} onClose={()=>setVersionOpen(false)} reload={reloadModVersion}/>} 
+    {downloadOpen && <DownloadModal user={user} onClose={()=>setDownloadOpen(false)} reload={reloadDownloads}/>} 
+    {noticeOpen && <NoticeModal user={user} onClose={()=>setNoticeOpen(false)} reload={reloadNotices}/>} 
   </section>;
+}
+
+function locksOrDefault(locks, key){
+  return locks?.[key] || defaultFeatureLocks[key];
 }
 
 function FeatureLockPanel({locks,reload}){
