@@ -42,6 +42,7 @@ DDINGPLUG_ALLOWED_ORIGIN=https://YOUR_DEPLOYED_DOMAIN
 ## Supabase
 
 `supabase/schema.sql`을 Supabase SQL Editor에서 실행해야 합니다.
+모드 최신 버전 정보는 `mod_version_config` 테이블에 저장되며, owner/admin 계정은 다운로드 페이지에서 직접 수정할 수 있습니다.
 
 Discord OAuth Redirect URL에는 배포 도메인과 로컬 개발 주소를 등록하세요.
 

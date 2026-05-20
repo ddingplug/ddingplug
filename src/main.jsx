@@ -8,6 +8,17 @@ import './styles.css';
 
 const fallbackAvatar = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="18" fill="%23604a3b"/><rect x="32" y="45" width="17" height="12" fill="%23e8d7c2"/><rect x="78" y="45" width="17" height="12" fill="%23e8d7c2"/></svg>';
 const POLICY_VERSION = '2026-05-20';
+const DEFAULT_MOD_VERSION = {
+  ok: true,
+  modId: 'ddingplug',
+  latestVersion: '0.6.7',
+  minecraftVersion: '1.21.4',
+  fabricLoader: '0.16.10+',
+  fabricApi: '0.119.2+1.21.4',
+  downloadUrl: 'https://ddingplug.vercel.app/download',
+  releaseNote: '업데이트 확인 UI 추가',
+  required: false
+};
 const money = (n) => `${Number(n || 0).toLocaleString()} G`;
 const formatPriceChange = (value) => {
   if (value === null || value === undefined || value === '' || Number(value) === 0) return { text:'-', direction:'none' };
@@ -60,6 +71,16 @@ const withoutOptionalProfileFields = (payload) => {
   ['privacy_agreed_at','privacy_policy_version','mod_policy_agreed_at','mod_policy_version','profile_completed_at'].forEach(key=>delete next[key]);
   return next;
 };
+const normalizeModVersion = (payload = {}) => ({
+  ...DEFAULT_MOD_VERSION,
+  latestVersion: payload.latestVersion || DEFAULT_MOD_VERSION.latestVersion,
+  minecraftVersion: payload.minecraftVersion || DEFAULT_MOD_VERSION.minecraftVersion,
+  fabricLoader: payload.fabricLoader || DEFAULT_MOD_VERSION.fabricLoader,
+  fabricApi: payload.fabricApi || DEFAULT_MOD_VERSION.fabricApi,
+  downloadUrl: payload.downloadUrl || DEFAULT_MOD_VERSION.downloadUrl,
+  releaseNote: payload.releaseNote || DEFAULT_MOD_VERSION.releaseNote,
+  required: Boolean(payload.required)
+});
 const formatLogTime = (iso) => {
   if (!iso) return '-';
   const date = new Date(iso);
@@ -79,6 +100,7 @@ function App(){
   const [logs,setLogs] = useState([]);
   const [notices,setNotices] = useState([]);
   const [downloads,setDownloads] = useState([]);
+  const [modVersion,setModVersion] = useState(DEFAULT_MOD_VERSION);
   const [featureLocks,setFeatureLocks] = useState(defaultFeatureLocks);
   const [oceanSettings,setOceanSettings] = useState(()=>{ try { return {...defaultOceanSettings, ...JSON.parse(localStorage.getItem('dding_ocean_settings') || '{}')}; } catch { return {...defaultOceanSettings}; } });
   const [loading,setLoading] = useState(true);
@@ -124,7 +146,7 @@ function App(){
       setProfile(null);
       setProfileReady(false);
     }
-    loadPrices(); loadLogs(); loadNotices(); loadDownloads(); loadFeatureLocks();
+    loadPrices(); loadLogs(); loadNotices(); loadDownloads(); loadFeatureLocks(); loadModVersion();
   },[user]);
   useEffect(()=>{
     if(user && profile?.role) loadLogs();
@@ -260,6 +282,18 @@ function App(){
     setDownloads(await hydrateProfiles(data || [], 'created_by'));
   }
 
+  async function loadModVersion(){
+    try {
+      const res = await fetch('/api/mod-version', { cache:'no-store' });
+      if(!res.ok) throw new Error('mod-version failed');
+      const payload = await res.json();
+      setModVersion(normalizeModVersion(payload));
+    } catch (error) {
+      console.warn('loadModVersion failed', error?.message || error);
+      setModVersion(DEFAULT_MOD_VERSION);
+    }
+  }
+
   async function loadFeatureLocks(){
     if(!isSupabaseConfigured){ setFeatureLocks(defaultFeatureLocks); return; }
     const {data,error}=await supabase
@@ -314,7 +348,7 @@ function App(){
 
   if(loading) return <div className="splash">DDING PLUG</div>;
   if(!user && ['privacy','mod-policy','download'].includes(current)){
-    return <PublicInfoShell current={current} theme={theme} setTheme={setTheme} downloads={downloads} reloadDownloads={loadDownloads}/>;
+    return <PublicInfoShell current={current} theme={theme} setTheme={setTheme} downloads={downloads} reloadDownloads={loadDownloads} modVersion={modVersion} reloadModVersion={loadModVersion}/>;
   }
   if(!user) return <LoginScreen login={login} theme={theme} setTheme={setTheme}/>;
   if(!profileReady) return <div className="splash">프로필 확인 중...</div>;
@@ -346,7 +380,7 @@ function App(){
             ? <OceanRouter current={current} prices={prices} user={user} oceanSettings={oceanSettings} setOceanSettings={setOceanSettings}/>
           : isStubRoute(current)
           ? current === 'download'
-            ? <DownloadPage user={user} profile={profile} downloads={downloads} reload={loadDownloads}/>
+            ? <DownloadPage user={user} profile={profile} downloads={downloads} reload={loadDownloads} modVersion={modVersion} reloadModVersion={loadModVersion}/>
             : <CategoryPlaceholder current={current} profile={profile}/>
           : ['market','crafting','cooking'].includes(current)
           ? <MarketDesk current={current} items={visibleItems} user={user} profile={profile} logs={logs} reload={()=>{loadPrices(); loadLogs();}} />
@@ -458,7 +492,7 @@ function LegalConsentModal({type,onClose,onConfirm}){
   </div>;
 }
 
-function PublicInfoShell({current,theme,setTheme,returnLabel='로그인 화면',downloads=[],reloadDownloads}){
+function PublicInfoShell({current,theme,setTheme,returnLabel='로그인 화면',downloads=[],reloadDownloads,modVersion=DEFAULT_MOD_VERSION,reloadModVersion}){
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   return <div className="plug-shell public-shell">
     <header className="topbar public-topbar">
@@ -480,7 +514,7 @@ function PublicInfoShell({current,theme,setTheme,returnLabel='로그인 화면',
       {current === 'privacy'
         ? <PrivacyPage/>
         : current === 'download'
-          ? <DownloadPage user={null} profile={null} downloads={downloads} reload={reloadDownloads}/>
+          ? <DownloadPage user={null} profile={null} downloads={downloads} reload={reloadDownloads} modVersion={modVersion} reloadModVersion={reloadModVersion}/>
           : <ModPolicyPage/>}
     </main>
     <SiteFooter/>
@@ -916,9 +950,11 @@ function NoticeModal({user,onClose,reload}){
 }
 
 
-function DownloadPage({user,profile,downloads,reload}){
+function DownloadPage({user,profile,downloads,reload,modVersion=DEFAULT_MOD_VERSION,reloadModVersion}){
   const isAdmin = ['owner','admin'].includes(profile?.role);
   const [open,setOpen]=useState(false);
+  const [versionOpen,setVersionOpen]=useState(false);
+  const version = normalizeModVersion(modVersion);
   async function remove(id){
     if(!isAdmin) return;
     if(!confirm('이 다운로드 항목을 삭제할까요?')) return;
@@ -938,18 +974,23 @@ function DownloadPage({user,profile,downloads,reload}){
   return <section className="download-page">
     <div className="page-title admin-title">
       <div><p className="mono">FABRIC MOD</p><h1>다운로드</h1><p>DDING PLUG Fabric 모드 최신 버전과 설치 안내를 확인하세요.</p></div>
-      {isAdmin && <button className="edit-badge" onClick={()=>setOpen(true)}>자료 업로드</button>}
+      {isAdmin && <div className="admin-title-actions">
+        <button className="edit-badge secondary-edit" onClick={()=>setVersionOpen(true)}>버전 정보 수정</button>
+        <button className="edit-badge" onClick={()=>setOpen(true)}>자료 업로드</button>
+      </div>}
     </div>
     <article className="mod-download-hero">
       <div>
         <p className="mono">DDING PLUG FABRIC MOD</p>
-        <h2>DDING PLUG Fabric Mod v0.6.7</h2>
+        <h2>DDING PLUG Fabric Mod v{version.latestVersion}</h2>
         <p>띵타이쿤 시세 조회, tooltip 시세 표시, 사용자가 직접 확인한 시세의 수동 제보를 돕는 Fabric 기반 클라이언트 모드입니다.</p>
         <div className="mod-version-meta">
-          <span>Minecraft 1.21.4</span>
-          <span>Fabric Loader 0.16.10+</span>
-          <span>Fabric API 0.119.2+1.21.4</span>
+          <span>Minecraft {version.minecraftVersion}</span>
+          <span>Fabric Loader {version.fabricLoader}</span>
+          <span>Fabric API {version.fabricApi}</span>
+          {version.required && <span className="required-version">필수 업데이트</span>}
         </div>
+        <p className="mod-release-note">최신 변경: {version.releaseNote}</p>
       </div>
       <button type="button" className="primary mod-download-button" onClick={scrollToDownloads}>다운로드 파일 보기</button>
     </article>
@@ -983,7 +1024,59 @@ function DownloadPage({user,profile,downloads,reload}){
       }) : <article className="placeholder-card"><p className="mono">DOWNLOAD</p><h2>등록된 다운로드가 없습니다.</h2><p>관리자 계정으로 파일을 업로드하면 일반 유저가 다운로드할 수 있습니다.</p></article>}
     </div>
     {open && <DownloadModal user={user} onClose={()=>setOpen(false)} reload={reload}/>} 
+    {versionOpen && <ModVersionModal user={user} version={version} onClose={()=>setVersionOpen(false)} reload={reloadModVersion}/>} 
   </section>;
+}
+function ModVersionModal({user,version,onClose,reload}){
+  const [form,setForm]=useState(()=>normalizeModVersion(version));
+  const [message,setMessage]=useState('');
+  const [saving,setSaving]=useState(false);
+  const update = (key,value) => setForm(prev=>({...prev,[key]:value}));
+  async function save(){
+    if(!isSupabaseConfigured){ setMessage('.env 파일에 Supabase 값을 넣어주세요.'); return; }
+    if(!form.latestVersion.trim()){ setMessage('최신 버전을 입력해주세요.'); return; }
+    if(!form.minecraftVersion.trim()){ setMessage('지원 Minecraft 버전을 입력해주세요.'); return; }
+    if(!form.downloadUrl.trim()){ setMessage('다운로드 페이지 URL을 입력해주세요.'); return; }
+    try { new URL(form.downloadUrl.trim()); }
+    catch { setMessage('다운로드 URL 형식이 올바르지 않습니다.'); return; }
+
+    setSaving(true);
+    setMessage('');
+    const {error}=await supabase.from('mod_version_config').upsert({
+      id:'ddingplug',
+      latest_version:form.latestVersion.trim(),
+      minecraft_version:form.minecraftVersion.trim(),
+      fabric_loader:form.fabricLoader.trim(),
+      fabric_api:form.fabricApi.trim(),
+      download_url:form.downloadUrl.trim(),
+      release_note:form.releaseNote.trim(),
+      required:!!form.required,
+      updated_by:user.id
+    }, { onConflict:'id' });
+    setSaving(false);
+    if(error){ setMessage(error.message + ' · supabase/schema.sql을 다시 실행했는지 확인해주세요.'); return; }
+    await reload?.();
+    onClose();
+  }
+  return <div className="modal-backdrop" role="dialog" aria-modal="true">
+    <div className="modal-card notice-modal mod-version-modal">
+      <div className="modal-head"><div><p className="mono">MOD VERSION</p><h2>모드 버전 정보 수정</h2></div><button onClick={onClose}>×</button></div>
+      <div className="mod-version-form-grid">
+        <label className="notice-input">최신 버전<input value={form.latestVersion} onChange={e=>update('latestVersion',e.target.value)} placeholder="0.6.7"/></label>
+        <label className="notice-input">지원 Minecraft 버전<input value={form.minecraftVersion} onChange={e=>update('minecraftVersion',e.target.value)} placeholder="1.21.4"/></label>
+        <label className="notice-input">Fabric Loader<input value={form.fabricLoader} onChange={e=>update('fabricLoader',e.target.value)} placeholder="0.16.10+"/></label>
+        <label className="notice-input">Fabric API<input value={form.fabricApi} onChange={e=>update('fabricApi',e.target.value)} placeholder="0.119.2+1.21.4"/></label>
+      </div>
+      <label className="notice-input">다운로드 페이지 URL<input value={form.downloadUrl} onChange={e=>update('downloadUrl',e.target.value)} placeholder="https://ddingplug.vercel.app/download"/></label>
+      <label className="notice-input">릴리즈 노트<textarea value={form.releaseNote} onChange={e=>update('releaseNote',e.target.value)} maxLength={300} /></label>
+      <label className="notice-input check-input">
+        <input type="checkbox" checked={form.required} onChange={e=>update('required',e.target.checked)} />
+        <span>필수 업데이트로 표시</span>
+      </label>
+      {message && <p className="modal-message">{message}</p>}
+      <div className="modal-actions"><button className="ghost" onClick={onClose}>취소</button><button className="primary" onClick={save} disabled={saving}>{saving ? '저장 중...' : '저장'}</button></div>
+    </div>
+  </div>;
 }
 function DownloadModal({user,onClose,reload}){
   const [title,setTitle]=useState('');

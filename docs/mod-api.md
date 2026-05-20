@@ -35,6 +35,7 @@ DDINGPLUG_MOD_DOWNLOAD_URL=https://ddingplug.vercel.app/download
 
 `SUPABASE_SERVICE_ROLE_KEY`는 서버리스 API에서만 사용해야 하며, 브라우저 코드에 노출하면 안 됩니다.
 `DDINGPLUG_MOD_API_KEY`는 모드 배포본에 하드코딩하지 말고, 운영자가 관리하는 별도 설정값으로 주입하는 방식을 권장합니다.
+모드 버전 정보는 기본적으로 `mod_version_config` 테이블에서 읽습니다. 위 `DDINGPLUG_MOD_*` 값은 DB 조회 실패 시 사용할 fallback입니다.
 
 ## 1. 시세 조회
 
@@ -74,6 +75,7 @@ GET /api/mod-version
 ```
 
 인증이나 API key가 필요 없는 공개 조회 API입니다. 개발 중에는 최신 정보가 바로 반영되도록 `Cache-Control: no-store`를 사용합니다.
+관리자 권한이 있는 계정은 웹사이트 다운로드 페이지에서 이 값을 수정할 수 있습니다.
 
 응답 예시:
 
