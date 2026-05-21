@@ -113,24 +113,24 @@ const newLedgerRow = () => ({
   id: null,
   trade_date: todayInputValue(),
   item_name: '',
-  quantity: '',
   buy_unit_price: '',
+  expected_sell_price: '',
   sell_unit_price: ''
 });
 const rowFromTrade = (row) => ({
   ...row,
   clientId: String(row.id),
-  quantity: row.quantity ?? '',
   buy_unit_price: row.buy_unit_price ?? '',
+  expected_sell_price: row.expected_sell_price ?? '',
   sell_unit_price: row.sell_unit_price ?? ''
 });
 const isLedgerRowStarted = (row) => Boolean(
   row?.item_name?.trim() ||
-  ledgerNumber(row?.quantity) ||
   ledgerNumber(row?.buy_unit_price) ||
+  ledgerNumber(row?.expected_sell_price) ||
   ledgerNumber(row?.sell_unit_price)
 );
-const isLedgerRowComplete = (row) => Boolean(row?.item_name?.trim() && ledgerNumber(row?.quantity) > 0 && ledgerNumber(row?.buy_unit_price) > 0);
+const isLedgerRowComplete = (row) => Boolean(row?.item_name?.trim() && ledgerNumber(row?.buy_unit_price) > 0);
 const ensureLedgerDraftRow = (rows=[]) => {
   const next = rows.filter((row, index) => row.id || isLedgerRowStarted(row) || index === rows.length - 1);
   if (!next.length || isLedgerRowStarted(next[next.length - 1])) next.push(newLedgerRow());
@@ -140,13 +140,15 @@ const ledgerPayload = (row, userId) => ({
   user_id: userId,
   trade_date: row.trade_date || todayInputValue(),
   item_name: String(row.item_name || '').trim(),
-  quantity: ledgerNumber(row.quantity) || 1,
+  quantity: 1,
   buy_unit_price: ledgerNumber(row.buy_unit_price),
+  expected_sell_price: ledgerNumber(row.expected_sell_price) > 0 ? ledgerNumber(row.expected_sell_price) : null,
   sell_unit_price: ledgerNumber(row.sell_unit_price) > 0 ? ledgerNumber(row.sell_unit_price) : null,
   memo: ''
 });
-const ledgerBuyTotal = (row) => ledgerNumber(row.quantity) * ledgerNumber(row.buy_unit_price);
-const ledgerSellTotal = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerNumber(row.quantity) * ledgerNumber(row.sell_unit_price) : 0;
+const ledgerBuyTotal = (row) => ledgerNumber(row.buy_unit_price);
+const ledgerExpectedProfit = (row) => ledgerNumber(row.expected_sell_price) > 0 ? ledgerNumber(row.expected_sell_price) - ledgerBuyTotal(row) : null;
+const ledgerSellTotal = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerNumber(row.sell_unit_price) : 0;
 const ledgerProfit = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerSellTotal(row) - ledgerBuyTotal(row) : null;
 
 function App(){
@@ -2219,6 +2221,10 @@ function MerchantLedgerPage({user,profile}){
   const totalSell = soldRows.reduce((sum,row)=>sum+ledgerSellTotal(row),0);
   const realizedProfit = soldRows.reduce((sum,row)=>sum+(ledgerProfit(row)||0),0);
   const inventoryCost = activeRows.filter(row=>ledgerNumber(row.sell_unit_price)<=0).reduce((sum,row)=>sum+ledgerBuyTotal(row),0);
+  const expectedProfit = activeRows.reduce((sum,row)=>{
+    const estimate = ledgerExpectedProfit(row);
+    return sum + (estimate == null ? 0 : estimate);
+  },0);
 
   if(!isAdmin){
     return <section className="placeholder-page"><div className="page-title"><h1>내 장부</h1><p>관리자만 접근할 수 있습니다.</p></div></section>;
@@ -2233,24 +2239,25 @@ function MerchantLedgerPage({user,profile}){
       <article><span>매입 합계</span><b>{ledgerMoney(totalBuy)}</b><p>{activeRows.length.toLocaleString('ko-KR')}건 기록</p></article>
       <article><span>판매 합계</span><b>{ledgerMoney(totalSell)}</b><p>{soldRows.length.toLocaleString('ko-KR')}건 판매 완료</p></article>
       <article className={realizedProfit >= 0 ? 'profit' : 'loss'}><span>확정 순수익</span><b>{ledgerMoney(realizedProfit)}</b><p>판매 완료 건만 계산</p></article>
+      <article><span>예상 순수익</span><b>{ledgerMoney(expectedProfit)}</b><p>예상 판매가 입력 건 기준</p></article>
       <article><span>보유 원가</span><b>{ledgerMoney(inventoryCost)}</b><p>아직 판매가 없는 재고</p></article>
     </div>
     <article className="ledger-sheet-card">
       <div className="board-head compact">
-        <div><h2>거래 입력</h2><p>아이템명, 수량, 매입 단가를 채우면 다음 줄이 자동으로 열립니다. 판매 단가는 나중에 입력해도 됩니다.</p></div>
+        <div><h2>거래 입력</h2><p>아이템명과 매입 단가를 채우면 다음 줄이 자동으로 열립니다. 예상 판매가와 실제 판매가는 나중에 입력해도 됩니다.</p></div>
         <div className="status-pill">{status || '자동 저장 대기'}</div>
       </div>
       <div className="ledger-table-wrap">
         <table className="ledger-table">
           <thead>
-            <tr><th>#</th><th>날짜</th><th>아이템</th><th>수량</th><th>매입 단가</th><th>매입 합계</th><th>판매 단가</th><th>판매 합계</th><th>상태</th><th>순수익</th><th></th></tr>
+            <tr><th>#</th><th>날짜</th><th>아이템</th><th>매입가</th><th>예상 판매가</th><th>예상 수익</th><th>실제 판매가</th><th>상태</th><th>확정 순수익</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((row,index)=><MerchantLedgerRow key={row.clientId} row={row} index={index} onChange={updateCell} onRemove={removeRow}/>)}
           </tbody>
         </table>
       </div>
-      <p className="ledger-hint">비어 있는 마지막 줄은 저장되지 않습니다. 매입 단가 기준으로 보유 원가를 잡고, 판매 단가가 입력되면 판매 완료로 계산합니다.</p>
+      <p className="ledger-hint">비어 있는 마지막 줄은 저장되지 않습니다. 매입가 기준으로 보유 원가를 잡고, 실제 판매가가 입력되면 판매 완료로 계산합니다.</p>
     </article>
   </section>;
 }
@@ -2260,18 +2267,19 @@ function MerchantLedgerRow({row,index,onChange,onRemove}){
   const complete = isLedgerRowComplete(row);
   const sold = ledgerNumber(row.sell_unit_price)>0;
   const profit = ledgerProfit(row);
+  const expectedProfit = ledgerExpectedProfit(row);
   const profitClass = profit == null ? '' : profit >= 0 ? 'up' : 'down';
+  const expectedProfitClass = expectedProfit == null ? '' : expectedProfit >= 0 ? 'up' : 'down';
   const rowClass = !started ? 'empty' : !complete ? 'editing' : sold ? 'sold' : 'holding';
   const change = (key)=>(e)=>onChange(row.clientId,key,e.target.value);
   return <tr className={`ledger-row ${rowClass}`}>
     <td className="ledger-index">{started ? index + 1 : '+'}</td>
     <td><input type="date" value={row.trade_date || todayInputValue()} onChange={change('trade_date')} /></td>
     <td><input className="ledger-item-input" value={row.item_name || ''} onChange={change('item_name')} placeholder="아이템명" /></td>
-    <td><input type="number" min="1" step="1" value={row.quantity ?? ''} onChange={change('quantity')} placeholder="1" /></td>
     <td><input type="number" min="0" step="1" value={row.buy_unit_price ?? ''} onChange={change('buy_unit_price')} placeholder="0" /></td>
-    <td className="ledger-money-cell">{started ? ledgerMoney(ledgerBuyTotal(row)) : '-'}</td>
-    <td><input type="number" min="0" step="1" value={row.sell_unit_price ?? ''} onChange={change('sell_unit_price')} placeholder="미판매" /></td>
-    <td className="ledger-money-cell">{sold ? ledgerMoney(ledgerSellTotal(row)) : '-'}</td>
+    <td><input type="number" min="0" step="1" value={row.expected_sell_price ?? ''} onChange={change('expected_sell_price')} placeholder="예상가" /></td>
+    <td className={`ledger-profit ${expectedProfitClass}`}>{expectedProfit == null ? '-' : ledgerMoney(expectedProfit)}</td>
+    <td><input type="number" min="0" step="1" value={row.sell_unit_price ?? ''} onChange={change('sell_unit_price')} placeholder="판매 후 입력" /></td>
     <td><span className={`ledger-state ${sold ? 'sold' : complete ? 'holding' : 'draft'}`}>{!started ? '새 거래' : sold ? '판매 완료' : complete ? '보유 중' : '작성 중'}</span></td>
     <td className={`ledger-profit ${profitClass}`}>{profit == null ? '-' : ledgerMoney(profit)}</td>
     <td><button className="ledger-delete" disabled={!started} onClick={()=>onRemove(row)}>삭제</button></td>

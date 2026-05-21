@@ -642,12 +642,14 @@ create table if not exists public.merchant_trades (
   item_name text not null default '',
   quantity numeric(12,2) not null default 1,
   buy_unit_price numeric(14,2) not null default 0,
+  expected_sell_price numeric(14,2),
   sell_unit_price numeric(14,2),
   memo text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint merchant_trades_quantity_positive check (quantity > 0),
   constraint merchant_trades_buy_nonnegative check (buy_unit_price >= 0),
+  constraint merchant_trades_expected_sell_nonnegative check (expected_sell_price is null or expected_sell_price >= 0),
   constraint merchant_trades_sell_nonnegative check (sell_unit_price is null or sell_unit_price >= 0)
 );
 
@@ -656,6 +658,7 @@ alter table public.merchant_trades add column if not exists trade_date date not 
 alter table public.merchant_trades add column if not exists item_name text not null default '';
 alter table public.merchant_trades add column if not exists quantity numeric(12,2) not null default 1;
 alter table public.merchant_trades add column if not exists buy_unit_price numeric(14,2) not null default 0;
+alter table public.merchant_trades add column if not exists expected_sell_price numeric(14,2);
 alter table public.merchant_trades add column if not exists sell_unit_price numeric(14,2);
 alter table public.merchant_trades add column if not exists memo text not null default '';
 alter table public.merchant_trades add column if not exists created_at timestamptz not null default now();
