@@ -787,7 +787,7 @@ function MarketSection({title,items,allItems,user,profile,reload,mode,empty}){
   const canEditPrices = ['owner','admin'].includes(profile?.role);
   return <section className={`market-board ${compactCooking ? 'cooking-board' : ''}`}>
     <div className="board-head">
-      <div><h2>{title}</h2><p>{title.includes('요리') ? '요리는 3일 주기 변동 항목입니다.' : title.includes('공예') ? '공예품은 매일 오전 3시 이후 확인한 값을 입력하세요.' : 'DB 기준 90% 이상 항목만 자동 표시됩니다.'}</p></div>
+      <div><h2>{title}</h2><p>{title.includes('요리') ? '요리는 3일 주기 변동 항목입니다.' : title.includes('공예') ? '공예품은 매일 오전 3시에 변동됩니다.' : 'DB 기준 90% 이상 항목만 자동 표시됩니다.'}</p></div>
       {canEditPrices && <button className="edit-badge" onClick={()=>setOpen(true)}>시세 수정</button>}
     </div>
     <div className="price-list">
