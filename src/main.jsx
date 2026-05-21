@@ -98,6 +98,56 @@ const formatLogTime = (iso) => {
   return date.toLocaleString('ko-KR', { month:'long', day:'numeric', hour:'numeric', minute:'2-digit' });
 };
 const debounce = (fn, wait) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); }; };
+const todayInputValue = () => {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+};
+const ledgerNumber = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+const ledgerMoney = (value) => `${Math.round(ledgerNumber(value)).toLocaleString('ko-KR')} G`;
+const newLedgerRow = () => ({
+  clientId: `draft-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  id: null,
+  trade_date: todayInputValue(),
+  item_name: '',
+  quantity: '',
+  buy_unit_price: '',
+  sell_unit_price: ''
+});
+const rowFromTrade = (row) => ({
+  ...row,
+  clientId: String(row.id),
+  quantity: row.quantity ?? '',
+  buy_unit_price: row.buy_unit_price ?? '',
+  sell_unit_price: row.sell_unit_price ?? ''
+});
+const isLedgerRowStarted = (row) => Boolean(
+  row?.item_name?.trim() ||
+  ledgerNumber(row?.quantity) ||
+  ledgerNumber(row?.buy_unit_price) ||
+  ledgerNumber(row?.sell_unit_price)
+);
+const isLedgerRowComplete = (row) => Boolean(row?.item_name?.trim() && ledgerNumber(row?.quantity) > 0 && ledgerNumber(row?.buy_unit_price) > 0);
+const ensureLedgerDraftRow = (rows=[]) => {
+  const next = rows.filter((row, index) => row.id || isLedgerRowStarted(row) || index === rows.length - 1);
+  if (!next.length || isLedgerRowStarted(next[next.length - 1])) next.push(newLedgerRow());
+  return next;
+};
+const ledgerPayload = (row, userId) => ({
+  user_id: userId,
+  trade_date: row.trade_date || todayInputValue(),
+  item_name: String(row.item_name || '').trim(),
+  quantity: ledgerNumber(row.quantity) || 1,
+  buy_unit_price: ledgerNumber(row.buy_unit_price),
+  sell_unit_price: ledgerNumber(row.sell_unit_price) > 0 ? ledgerNumber(row.sell_unit_price) : null,
+  memo: ''
+});
+const ledgerBuyTotal = (row) => ledgerNumber(row.quantity) * ledgerNumber(row.buy_unit_price);
+const ledgerSellTotal = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerNumber(row.quantity) * ledgerNumber(row.sell_unit_price) : 0;
+const ledgerProfit = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerSellTotal(row) - ledgerBuyTotal(row) : null;
 
 function App(){
   const [hash,setHash] = useState(route());
@@ -389,6 +439,8 @@ function App(){
           ? <ModPolicyPage/>
         : effectiveCurrent === 'notice'
           ? <NoticePage user={user} profile={profile} notices={notices} reload={loadNotices}/>
+        : effectiveCurrent === 'ledger'
+          ? <MerchantLedgerPage user={user} profile={profile}/>
           : effectiveCurrent === 'admin'
             ? <AdminPage
                 user={user}
@@ -639,6 +691,7 @@ function Topbar({current,user,profile,logout,theme,setTheme}){
           <span>{nextTheme === 'dark' ? '다크 모드로 변경' : '라이트 모드로 변경'}</span>
         </button>
         <button onClick={()=>{go('#/profile'); setProfileOpen(false);}}>내 프로필</button>
+        {isAdmin && <button onClick={()=>{go('#/ledger'); setProfileOpen(false);}}>내 장부</button>}
         {isAdmin && <button onClick={()=>{go('#/admin'); setProfileOpen(false);}}>관리자 로그</button>}
         <button className="danger" onClick={logout}>로그아웃</button>
       </div>}
@@ -2059,6 +2112,169 @@ function RecipeCard({row}){
       <details className="detail-box"><summary>상세 보기</summary><div className="data-missing"><b>데이터 상태</b><p>출처: {row.source}. 아이콘, 획득처, 일부 시세는 미연결 상태일 수 있습니다.</p>{missingNames.length ? <p>한글명 데이터 필요: {missingNames.map(([k])=>k).join(', ')}</p> : null}</div></details>
     </div>
   </article>;
+}
+
+function MerchantLedgerPage({user,profile}){
+  const isAdmin = ['owner','admin'].includes(profile?.role);
+  const [rows,setRows] = useState(()=>ensureLedgerDraftRow([]));
+  const [loading,setLoading] = useState(true);
+  const [status,setStatus] = useState('');
+  const rowsRef = useRef(rows);
+  const timersRef = useRef({});
+  const creatingRef = useRef(new Set());
+
+  useEffect(()=>{ rowsRef.current = rows; },[rows]);
+  useEffect(()=>{
+    if(!isAdmin || !user?.id){ setLoading(false); return; }
+    loadLedgerRows();
+    return ()=>Object.values(timersRef.current).forEach(clearTimeout);
+  },[isAdmin,user?.id]);
+
+  async function loadLedgerRows(){
+    if(!isSupabaseConfigured){
+      setStatus('Supabase 연결 후 사용할 수 있습니다.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const {data,error}=await supabase
+      .from('merchant_trades')
+      .select('*')
+      .order('trade_date',{ascending:true})
+      .order('id',{ascending:true});
+    if(error){
+      setStatus(error.message.includes('merchant_trades') ? '장부 테이블이 아직 없습니다. Supabase SQL 업데이트가 필요합니다.' : error.message);
+      setRows(ensureLedgerDraftRow([]));
+    } else {
+      setRows(ensureLedgerDraftRow((data || []).map(rowFromTrade)));
+      setStatus('장부를 불러왔습니다.');
+    }
+    setLoading(false);
+  }
+
+  function updateCell(clientId,key,value){
+    const currentRow = rowsRef.current.find(row=>row.clientId===clientId);
+    if(!currentRow) return;
+    const nextRow = {...currentRow,[key]:value};
+    setRows(prev=>ensureLedgerDraftRow(prev.map(row=>row.clientId===clientId ? {...row,[key]:value} : row)));
+    if(nextRow.id){
+      scheduleSave(nextRow);
+      return;
+    }
+    if(isLedgerRowComplete(nextRow)) createTrade(nextRow);
+  }
+
+  async function createTrade(row){
+    if(!user?.id || creatingRef.current.has(row.clientId)) return;
+    creatingRef.current.add(row.clientId);
+    setStatus('새 거래 저장 중...');
+    const {data,error}=await supabase
+      .from('merchant_trades')
+      .insert(ledgerPayload(row,user.id))
+      .select('*')
+      .single();
+    creatingRef.current.delete(row.clientId);
+    if(error){
+      setStatus('저장 실패 · '+error.message);
+      return;
+    }
+    setRows(prev=>ensureLedgerDraftRow(prev.map(item=>item.clientId===row.clientId ? {...item,id:data.id,created_at:data.created_at,updated_at:data.updated_at} : item)));
+    setStatus('새 거래가 저장되었습니다.');
+    setTimeout(()=>{
+      const latest = rowsRef.current.find(item=>item.clientId===row.clientId);
+      if(latest?.id) scheduleSave(latest);
+    },0);
+  }
+
+  function scheduleSave(row){
+    if(!row.id || !isLedgerRowComplete(row)) return;
+    clearTimeout(timersRef.current[row.clientId]);
+    timersRef.current[row.clientId] = setTimeout(async()=>{
+      const {user_id, ...payload}=ledgerPayload(row,user.id);
+      setStatus('자동 저장 중...');
+      const {error}=await supabase.from('merchant_trades').update(payload).eq('id',row.id);
+      setStatus(error ? '저장 실패 · '+error.message : '자동 저장됨');
+    },650);
+  }
+
+  async function removeRow(row){
+    if(!row.id){
+      setRows(prev=>ensureLedgerDraftRow(prev.filter(item=>item.clientId!==row.clientId)));
+      return;
+    }
+    if(!confirm(`${row.item_name || '거래'} 기록을 삭제할까요?`)) return;
+    const {error}=await supabase.from('merchant_trades').delete().eq('id',row.id);
+    if(error){
+      setStatus('삭제 실패 · '+error.message);
+      return;
+    }
+    setRows(prev=>ensureLedgerDraftRow(prev.filter(item=>item.clientId!==row.clientId)));
+    setStatus('삭제되었습니다.');
+  }
+
+  const activeRows = rows.filter(row=>row.id || isLedgerRowComplete(row));
+  const soldRows = activeRows.filter(row=>ledgerNumber(row.sell_unit_price)>0);
+  const totalBuy = activeRows.reduce((sum,row)=>sum+ledgerBuyTotal(row),0);
+  const totalSell = soldRows.reduce((sum,row)=>sum+ledgerSellTotal(row),0);
+  const realizedProfit = soldRows.reduce((sum,row)=>sum+(ledgerProfit(row)||0),0);
+  const inventoryCost = activeRows.filter(row=>ledgerNumber(row.sell_unit_price)<=0).reduce((sum,row)=>sum+ledgerBuyTotal(row),0);
+
+  if(!isAdmin){
+    return <section className="placeholder-page"><div className="page-title"><h1>내 장부</h1><p>관리자만 접근할 수 있습니다.</p></div></section>;
+  }
+
+  return <section className="merchant-page">
+    <div className="page-title merchant-title">
+      <div><p className="mono">MERCHANT LEDGER</p><h1>내 장부</h1><p>인게임 장사 매입가와 판매가를 한 줄씩 기록하고 확정 순수익을 확인합니다.</p></div>
+      <button className="edit-badge" onClick={loadLedgerRows}>{loading ? '불러오는 중...' : '새로고침'}</button>
+    </div>
+    <div className="ledger-summary-grid">
+      <article><span>매입 합계</span><b>{ledgerMoney(totalBuy)}</b><p>{activeRows.length.toLocaleString('ko-KR')}건 기록</p></article>
+      <article><span>판매 합계</span><b>{ledgerMoney(totalSell)}</b><p>{soldRows.length.toLocaleString('ko-KR')}건 판매 완료</p></article>
+      <article className={realizedProfit >= 0 ? 'profit' : 'loss'}><span>확정 순수익</span><b>{ledgerMoney(realizedProfit)}</b><p>판매 완료 건만 계산</p></article>
+      <article><span>보유 원가</span><b>{ledgerMoney(inventoryCost)}</b><p>아직 판매가 없는 재고</p></article>
+    </div>
+    <article className="ledger-sheet-card">
+      <div className="board-head compact">
+        <div><h2>거래 입력</h2><p>아이템명, 수량, 매입 단가를 채우면 다음 줄이 자동으로 열립니다. 판매 단가는 나중에 입력해도 됩니다.</p></div>
+        <div className="status-pill">{status || '자동 저장 대기'}</div>
+      </div>
+      <div className="ledger-table-wrap">
+        <table className="ledger-table">
+          <thead>
+            <tr><th>#</th><th>날짜</th><th>아이템</th><th>수량</th><th>매입 단가</th><th>매입 합계</th><th>판매 단가</th><th>판매 합계</th><th>상태</th><th>순수익</th><th></th></tr>
+          </thead>
+          <tbody>
+            {rows.map((row,index)=><MerchantLedgerRow key={row.clientId} row={row} index={index} onChange={updateCell} onRemove={removeRow}/>)}
+          </tbody>
+        </table>
+      </div>
+      <p className="ledger-hint">비어 있는 마지막 줄은 저장되지 않습니다. 매입 단가 기준으로 보유 원가를 잡고, 판매 단가가 입력되면 판매 완료로 계산합니다.</p>
+    </article>
+  </section>;
+}
+
+function MerchantLedgerRow({row,index,onChange,onRemove}){
+  const started = isLedgerRowStarted(row);
+  const complete = isLedgerRowComplete(row);
+  const sold = ledgerNumber(row.sell_unit_price)>0;
+  const profit = ledgerProfit(row);
+  const profitClass = profit == null ? '' : profit >= 0 ? 'up' : 'down';
+  const rowClass = !started ? 'empty' : !complete ? 'editing' : sold ? 'sold' : 'holding';
+  const change = (key)=>(e)=>onChange(row.clientId,key,e.target.value);
+  return <tr className={`ledger-row ${rowClass}`}>
+    <td className="ledger-index">{started ? index + 1 : '+'}</td>
+    <td><input type="date" value={row.trade_date || todayInputValue()} onChange={change('trade_date')} /></td>
+    <td><input className="ledger-item-input" value={row.item_name || ''} onChange={change('item_name')} placeholder="아이템명" /></td>
+    <td><input type="number" min="1" step="1" value={row.quantity ?? ''} onChange={change('quantity')} placeholder="1" /></td>
+    <td><input type="number" min="0" step="1" value={row.buy_unit_price ?? ''} onChange={change('buy_unit_price')} placeholder="0" /></td>
+    <td className="ledger-money-cell">{started ? ledgerMoney(ledgerBuyTotal(row)) : '-'}</td>
+    <td><input type="number" min="0" step="1" value={row.sell_unit_price ?? ''} onChange={change('sell_unit_price')} placeholder="미판매" /></td>
+    <td className="ledger-money-cell">{sold ? ledgerMoney(ledgerSellTotal(row)) : '-'}</td>
+    <td><span className={`ledger-state ${sold ? 'sold' : complete ? 'holding' : 'draft'}`}>{!started ? '새 거래' : sold ? '판매 완료' : complete ? '보유 중' : '작성 중'}</span></td>
+    <td className={`ledger-profit ${profitClass}`}>{profit == null ? '-' : ledgerMoney(profit)}</td>
+    <td><button className="ledger-delete" disabled={!started} onClick={()=>onRemove(row)}>삭제</button></td>
+  </tr>;
 }
 
 function Profile({user,profile,setProfile}){

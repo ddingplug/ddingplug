@@ -633,3 +633,61 @@ create policy "Admins can delete feature locks" on public.feature_locks for dele
 
 revoke execute on function public.set_feature_lock(text, boolean, text) from public, anon;
 grant execute on function public.set_feature_lock(text, boolean, text) to authenticated;
+
+-- ---------- merchant ledger ----------
+create table if not exists public.merchant_trades (
+  id bigserial primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  trade_date date not null default current_date,
+  item_name text not null default '',
+  quantity numeric(12,2) not null default 1,
+  buy_unit_price numeric(14,2) not null default 0,
+  sell_unit_price numeric(14,2),
+  memo text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint merchant_trades_quantity_positive check (quantity > 0),
+  constraint merchant_trades_buy_nonnegative check (buy_unit_price >= 0),
+  constraint merchant_trades_sell_nonnegative check (sell_unit_price is null or sell_unit_price >= 0)
+);
+
+alter table public.merchant_trades add column if not exists user_id uuid references auth.users(id) on delete cascade;
+alter table public.merchant_trades add column if not exists trade_date date not null default current_date;
+alter table public.merchant_trades add column if not exists item_name text not null default '';
+alter table public.merchant_trades add column if not exists quantity numeric(12,2) not null default 1;
+alter table public.merchant_trades add column if not exists buy_unit_price numeric(14,2) not null default 0;
+alter table public.merchant_trades add column if not exists sell_unit_price numeric(14,2);
+alter table public.merchant_trades add column if not exists memo text not null default '';
+alter table public.merchant_trades add column if not exists created_at timestamptz not null default now();
+alter table public.merchant_trades add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists merchant_trades_user_date_idx
+  on public.merchant_trades (user_id, trade_date desc, id desc);
+
+drop trigger if exists set_merchant_trades_updated_at on public.merchant_trades;
+create trigger set_merchant_trades_updated_at
+before update on public.merchant_trades
+for each row execute function public.set_updated_at();
+
+alter table public.merchant_trades enable row level security;
+drop policy if exists "Admins can read own merchant trades" on public.merchant_trades;
+drop policy if exists "Admins can insert own merchant trades" on public.merchant_trades;
+drop policy if exists "Admins can update own merchant trades" on public.merchant_trades;
+drop policy if exists "Admins can delete own merchant trades" on public.merchant_trades;
+create policy "Admins can read own merchant trades" on public.merchant_trades
+  for select to authenticated
+  using ((select auth.uid()) = user_id and (select public.is_admin_user()));
+create policy "Admins can insert own merchant trades" on public.merchant_trades
+  for insert to authenticated
+  with check ((select auth.uid()) = user_id and (select public.is_admin_user()));
+create policy "Admins can update own merchant trades" on public.merchant_trades
+  for update to authenticated
+  using ((select auth.uid()) = user_id and (select public.is_admin_user()))
+  with check ((select auth.uid()) = user_id and (select public.is_admin_user()));
+create policy "Admins can delete own merchant trades" on public.merchant_trades
+  for delete to authenticated
+  using ((select auth.uid()) = user_id and (select public.is_admin_user()));
+
+revoke all on public.merchant_trades from anon;
+grant select, insert, update, delete on public.merchant_trades to authenticated;
+grant usage, select on sequence public.merchant_trades_id_seq to authenticated;
