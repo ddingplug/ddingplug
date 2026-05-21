@@ -6222,7 +6222,7 @@ html[data-theme="dark"] .craft-lack {
 
 .ledger-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4,minmax(0,1fr));
+  grid-template-columns: repeat(auto-fit,minmax(176px,1fr));
   gap: 12px;
   margin: 0 0 16px;
 }
@@ -6291,7 +6291,7 @@ html[data-theme="dark"] .craft-lack {
 
 .ledger-table {
   width: 100%;
-  min-width: 1140px;
+  min-width: 1040px;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -6388,16 +6388,11 @@ html[data-theme="dark"] .craft-lack {
   color: #a23d39;
 }
 
-.ledger-method-toggle {
-  display: grid;
-  grid-template-columns: repeat(2,minmax(68px,1fr));
-  gap: 6px;
-  min-width: 148px;
-}
-
-.ledger-method-toggle button {
+.ledger-method-button {
+  width: 100%;
+  min-width: 96px;
   min-height: 34px;
-  padding: 0 9px;
+  padding: 0 10px;
   border: 1px solid rgba(83,117,78,0.14);
   border-radius: 10px;
   background: rgba(255,255,255,0.56);
@@ -6407,10 +6402,14 @@ html[data-theme="dark"] .craft-lack {
   white-space: nowrap;
 }
 
-.ledger-method-toggle button.active {
+.ledger-method-button.shop {
   border-color: rgba(69,182,109,0.45);
   background: rgba(69,182,109,0.16);
   color: #22744a;
+}
+
+.ledger-method-button.direct {
+  border-color: rgba(83,117,78,0.14);
 }
 
 .ledger-state {
@@ -6506,12 +6505,12 @@ html[data-theme="dark"] .ledger-profit.down {
   color: #ffabab;
 }
 
-html[data-theme="dark"] .ledger-method-toggle button {
+html[data-theme="dark"] .ledger-method-button {
   border-color: rgba(235,226,190,0.12);
   background: rgba(246,240,220,0.055);
 }
 
-html[data-theme="dark"] .ledger-method-toggle button.active {
+html[data-theme="dark"] .ledger-method-button.shop {
   border-color: rgba(125,225,151,0.34);
   background: rgba(125,225,151,0.13);
   color: #a9efb8;

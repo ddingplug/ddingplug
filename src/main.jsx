@@ -2277,12 +2277,14 @@ function MerchantLedgerRow({row,index,onChange,onRemove}){
   const started = isLedgerRowStarted(row);
   const complete = isLedgerRowComplete(row);
   const sold = ledgerNumber(row.sell_unit_price)>0;
+  const saleMethod = ledgerSaleMethod(row);
   const profit = ledgerProfit(row);
   const expectedProfit = ledgerExpectedProfit(row);
   const profitClass = profit == null ? '' : profit >= 0 ? 'up' : 'down';
   const expectedProfitClass = expectedProfit == null ? '' : expectedProfit >= 0 ? 'up' : 'down';
   const rowClass = !started ? 'empty' : !complete ? 'editing' : sold ? 'sold' : 'holding';
   const change = (key)=>(e)=>onChange(row.clientId,key,e.target.value);
+  const toggleSaleMethod = () => onChange(row.clientId, 'sale_method', saleMethod === 'shop' ? 'direct' : 'shop');
   return <tr className={`ledger-row ${rowClass}`}>
     <td className="ledger-index">{started ? index + 1 : '+'}</td>
     <td><input type="date" value={row.trade_date || todayInputValue()} onChange={change('trade_date')} /></td>
@@ -2290,10 +2292,9 @@ function MerchantLedgerRow({row,index,onChange,onRemove}){
     <td><input type="number" min="0" step="1" value={row.buy_unit_price ?? ''} onChange={change('buy_unit_price')} placeholder="0" /></td>
     <td><input type="number" min="0" step="1" value={row.expected_sell_price ?? ''} onChange={change('expected_sell_price')} placeholder="예상가" /></td>
     <td>
-      <div className="ledger-method-toggle" role="group" aria-label="판매 방식">
-        <button type="button" className={ledgerSaleMethod(row)==='direct' ? 'active' : ''} onClick={()=>onChange(row.clientId,'sale_method','direct')}>직거래</button>
-        <button type="button" className={ledgerSaleMethod(row)==='shop' ? 'active' : ''} onClick={()=>onChange(row.clientId,'sale_method','shop')}>유저상점</button>
-      </div>
+      <button type="button" className={`ledger-method-button ${saleMethod}`} onClick={toggleSaleMethod}>
+        {saleMethod === 'shop' ? '유저상점 -5%' : '직거래'}
+      </button>
     </td>
     <td className={`ledger-profit ${expectedProfitClass}`}>{expectedProfit == null ? '-' : ledgerMoney(expectedProfit)}</td>
     <td><input type="number" min="0" step="1" value={row.sell_unit_price ?? ''} onChange={change('sell_unit_price')} placeholder="판매 후 입력" /></td>
