@@ -108,6 +108,13 @@ const ledgerNumber = (value) => {
   return Number.isFinite(n) ? n : 0;
 };
 const ledgerMoney = (value) => `${Math.round(ledgerNumber(value)).toLocaleString('ko-KR')} G`;
+const USER_SHOP_FEE_RATE = 0.05;
+const ledgerSaleMethod = (row) => row?.sale_method === 'shop' ? 'shop' : 'direct';
+const ledgerNetSale = (value, method) => {
+  const amount = ledgerNumber(value);
+  if (amount <= 0) return 0;
+  return ledgerSaleMethod({sale_method:method}) === 'shop' ? amount * (1 - USER_SHOP_FEE_RATE) : amount;
+};
 const newLedgerRow = () => ({
   clientId: `draft-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   id: null,
@@ -115,20 +122,23 @@ const newLedgerRow = () => ({
   item_name: '',
   buy_unit_price: '',
   expected_sell_price: '',
-  sell_unit_price: ''
+  sell_unit_price: '',
+  sale_method: 'direct'
 });
 const rowFromTrade = (row) => ({
   ...row,
   clientId: String(row.id),
   buy_unit_price: row.buy_unit_price ?? '',
   expected_sell_price: row.expected_sell_price ?? '',
-  sell_unit_price: row.sell_unit_price ?? ''
+  sell_unit_price: row.sell_unit_price ?? '',
+  sale_method: ledgerSaleMethod(row)
 });
 const isLedgerRowStarted = (row) => Boolean(
   row?.item_name?.trim() ||
   ledgerNumber(row?.buy_unit_price) ||
   ledgerNumber(row?.expected_sell_price) ||
-  ledgerNumber(row?.sell_unit_price)
+  ledgerNumber(row?.sell_unit_price) ||
+  ledgerSaleMethod(row) !== 'direct'
 );
 const isLedgerRowComplete = (row) => Boolean(row?.item_name?.trim() && ledgerNumber(row?.buy_unit_price) > 0);
 const ensureLedgerDraftRow = (rows=[]) => {
@@ -144,11 +154,12 @@ const ledgerPayload = (row, userId) => ({
   buy_unit_price: ledgerNumber(row.buy_unit_price),
   expected_sell_price: ledgerNumber(row.expected_sell_price) > 0 ? ledgerNumber(row.expected_sell_price) : null,
   sell_unit_price: ledgerNumber(row.sell_unit_price) > 0 ? ledgerNumber(row.sell_unit_price) : null,
+  sale_method: ledgerSaleMethod(row),
   memo: ''
 });
 const ledgerBuyTotal = (row) => ledgerNumber(row.buy_unit_price);
-const ledgerExpectedProfit = (row) => ledgerNumber(row.expected_sell_price) > 0 ? ledgerNumber(row.expected_sell_price) - ledgerBuyTotal(row) : null;
-const ledgerSellTotal = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerNumber(row.sell_unit_price) : 0;
+const ledgerExpectedProfit = (row) => ledgerNumber(row.expected_sell_price) > 0 ? ledgerNetSale(row.expected_sell_price, row.sale_method) - ledgerBuyTotal(row) : null;
+const ledgerSellTotal = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerNetSale(row.sell_unit_price, row.sale_method) : 0;
 const ledgerProfit = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerSellTotal(row) - ledgerBuyTotal(row) : null;
 
 function App(){
@@ -2237,7 +2248,7 @@ function MerchantLedgerPage({user,profile}){
     </div>
     <div className="ledger-summary-grid">
       <article><span>매입 합계</span><b>{ledgerMoney(totalBuy)}</b><p>{activeRows.length.toLocaleString('ko-KR')}건 기록</p></article>
-      <article><span>판매 합계</span><b>{ledgerMoney(totalSell)}</b><p>{soldRows.length.toLocaleString('ko-KR')}건 판매 완료</p></article>
+      <article><span>판매 합계</span><b>{ledgerMoney(totalSell)}</b><p>{soldRows.length.toLocaleString('ko-KR')}건 판매 완료 · 수수료 반영</p></article>
       <article className={realizedProfit >= 0 ? 'profit' : 'loss'}><span>확정 순수익</span><b>{ledgerMoney(realizedProfit)}</b><p>판매 완료 건만 계산</p></article>
       <article><span>예상 순수익</span><b>{ledgerMoney(expectedProfit)}</b><p>예상 판매가 입력 건 기준</p></article>
       <article><span>보유 원가</span><b>{ledgerMoney(inventoryCost)}</b><p>아직 판매가 없는 재고</p></article>
@@ -2250,14 +2261,14 @@ function MerchantLedgerPage({user,profile}){
       <div className="ledger-table-wrap">
         <table className="ledger-table">
           <thead>
-            <tr><th>#</th><th>날짜</th><th>아이템</th><th>매입가</th><th>예상 판매가</th><th>예상 수익</th><th>실제 판매가</th><th>상태</th><th>확정 순수익</th><th></th></tr>
+            <tr><th>#</th><th>날짜</th><th>아이템</th><th>매입가</th><th>예상 판매가</th><th>판매 방식</th><th>예상 수익</th><th>실제 판매가</th><th>상태</th><th>확정 순수익</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((row,index)=><MerchantLedgerRow key={row.clientId} row={row} index={index} onChange={updateCell} onRemove={removeRow}/>)}
           </tbody>
         </table>
       </div>
-      <p className="ledger-hint">비어 있는 마지막 줄은 저장되지 않습니다. 매입가 기준으로 보유 원가를 잡고, 실제 판매가가 입력되면 판매 완료로 계산합니다.</p>
+      <p className="ledger-hint">유저상점은 판매가에서 5% 수수료를 뺀 금액으로 예상 수익과 확정 순수익을 계산합니다.</p>
     </article>
   </section>;
 }
@@ -2278,6 +2289,12 @@ function MerchantLedgerRow({row,index,onChange,onRemove}){
     <td><input className="ledger-item-input" value={row.item_name || ''} onChange={change('item_name')} placeholder="아이템명" /></td>
     <td><input type="number" min="0" step="1" value={row.buy_unit_price ?? ''} onChange={change('buy_unit_price')} placeholder="0" /></td>
     <td><input type="number" min="0" step="1" value={row.expected_sell_price ?? ''} onChange={change('expected_sell_price')} placeholder="예상가" /></td>
+    <td>
+      <div className="ledger-method-toggle" role="group" aria-label="판매 방식">
+        <button type="button" className={ledgerSaleMethod(row)==='direct' ? 'active' : ''} onClick={()=>onChange(row.clientId,'sale_method','direct')}>직거래</button>
+        <button type="button" className={ledgerSaleMethod(row)==='shop' ? 'active' : ''} onClick={()=>onChange(row.clientId,'sale_method','shop')}>유저상점</button>
+      </div>
+    </td>
     <td className={`ledger-profit ${expectedProfitClass}`}>{expectedProfit == null ? '-' : ledgerMoney(expectedProfit)}</td>
     <td><input type="number" min="0" step="1" value={row.sell_unit_price ?? ''} onChange={change('sell_unit_price')} placeholder="판매 후 입력" /></td>
     <td><span className={`ledger-state ${sold ? 'sold' : complete ? 'holding' : 'draft'}`}>{!started ? '새 거래' : sold ? '판매 완료' : complete ? '보유 중' : '작성 중'}</span></td>
