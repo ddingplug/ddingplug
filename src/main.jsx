@@ -764,11 +764,11 @@ function MarketDesk({current,items,user,profile,logs,reload}){
     <div className="market-layout">
       <div className="market-stack">
         {current === 'market' && <>
-          <MarketSection title="오늘의 공예품" items={hotCraft} allItems={craft} user={user} reload={reload} mode="today" empty="현재 90% 이상인 공예품이 없습니다." />
-          <MarketSection title="오늘의 요리" items={hotCooking} allItems={cooking} user={user} reload={reload} mode="today" empty="현재 90% 이상인 요리가 없습니다." />
+          <MarketSection title="오늘의 공예품" items={hotCraft} allItems={craft} user={user} profile={profile} reload={reload} mode="today" empty="현재 90% 이상인 공예품이 없습니다." />
+          <MarketSection title="오늘의 요리" items={hotCooking} allItems={cooking} user={user} profile={profile} reload={reload} mode="today" empty="현재 90% 이상인 요리가 없습니다." />
         </>}
-        {current === 'crafting' && <MarketSection title="공예품 시세" items={craft} allItems={craft} user={user} reload={reload}/>} 
-        {current === 'cooking' && <MarketSection title="요리 시세" items={cooking} allItems={cooking} user={user} reload={reload}/>} 
+        {current === 'crafting' && <MarketSection title="공예품 시세" items={craft} allItems={craft} user={user} profile={profile} reload={reload}/>} 
+        {current === 'cooking' && <MarketSection title="요리 시세" items={cooking} allItems={cooking} user={user} profile={profile} reload={reload}/>} 
         <p className="market-note">퍼센트(%)는 최고가 대비 현재 시세의 비율입니다. 오늘의 시세에서는 90% 이상 항목만 오늘의 추천으로 표시됩니다.</p>
       </div>
       <RecentPanel logs={logs} current={current}/>
@@ -780,19 +780,20 @@ function percentOf(item){
   return item.price_max ? Math.round((Number(item.price||0)/item.price_max)*100) : 0;
 }
 
-function MarketSection({title,items,allItems,user,reload,mode,empty}){
+function MarketSection({title,items,allItems,user,profile,reload,mode,empty}){
   const [open,setOpen] = useState(false);
   const isCooking = title.includes('요리');
   const compactCooking = isCooking && mode !== 'today';
+  const canEditPrices = ['owner','admin'].includes(profile?.role);
   return <section className={`market-board ${compactCooking ? 'cooking-board' : ''}`}>
     <div className="board-head">
       <div><h2>{title}</h2><p>{title.includes('요리') ? '요리는 3일 주기 변동 항목입니다.' : title.includes('공예') ? '공예품은 매일 오전 3시 이후 확인한 값을 입력하세요.' : 'DB 기준 90% 이상 항목만 자동 표시됩니다.'}</p></div>
-      {user && <button className="edit-badge" onClick={()=>setOpen(true)}>시세 수정</button>}
+      {canEditPrices && <button className="edit-badge" onClick={()=>setOpen(true)}>시세 수정</button>}
     </div>
     <div className="price-list">
       {items.length ? items.map(item=><MarketCard key={item.item_key} item={item}/>) : <div className="empty-state">{empty || '표시할 항목이 없습니다.'}</div>}
     </div>
-    {open && <BulkPriceModal title={title.replace('오늘의 ', '')} items={allItems || items} user={user} onClose={()=>setOpen(false)} reload={reload}/>} 
+    {open && canEditPrices && <BulkPriceModal title={title.replace('오늘의 ', '')} items={allItems || items} user={user} onClose={()=>setOpen(false)} reload={reload}/>} 
   </section>;
 }
 
