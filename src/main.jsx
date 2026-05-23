@@ -161,6 +161,41 @@ const ledgerBuyTotal = (row) => ledgerNumber(row.buy_unit_price);
 const ledgerExpectedProfit = (row) => ledgerNumber(row.expected_sell_price) > 0 ? ledgerNetSale(row.expected_sell_price, row.sale_method) - ledgerBuyTotal(row) : null;
 const ledgerSellTotal = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerNetSale(row.sell_unit_price, row.sale_method) : 0;
 const ledgerProfit = (row) => ledgerNumber(row.sell_unit_price) > 0 ? ledgerSellTotal(row) - ledgerBuyTotal(row) : null;
+const BUY_PLAN_RATE = 0.6;
+const newBuyPlanRow = () => ({
+  clientId: `buy-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  id: null,
+  item_name: '',
+  average_price: '',
+  target_buy_price: ''
+});
+const rowFromBuyPlan = (row) => ({
+  ...row,
+  clientId: String(row.id),
+  average_price: row.average_price ?? '',
+  target_buy_price: row.target_buy_price ?? ''
+});
+const isBuyPlanStarted = (row) => Boolean(
+  row?.item_name?.trim() ||
+  ledgerNumber(row?.average_price) ||
+  ledgerNumber(row?.target_buy_price)
+);
+const isBuyPlanComplete = (row) => Boolean(row?.item_name?.trim() && ledgerNumber(row?.average_price) > 0);
+const ensureBuyPlanDraftRow = (rows=[]) => {
+  const next = rows.filter((row, index) => row.id || isBuyPlanStarted(row) || index === rows.length - 1);
+  if (!next.length || isBuyPlanStarted(next[next.length - 1])) next.push(newBuyPlanRow());
+  return next;
+};
+const buyPlanPayload = (row, userId) => ({
+  user_id: userId,
+  item_name: String(row.item_name || '').trim(),
+  average_price: ledgerNumber(row.average_price),
+  target_buy_price: ledgerNumber(row.target_buy_price)
+});
+const suggestedBuyPrice = (value) => Math.round(ledgerNumber(value) * BUY_PLAN_RATE);
+const buyPlanMargin = (row) => ledgerNumber(row.average_price) > 0 && ledgerNumber(row.target_buy_price) > 0
+  ? ledgerNumber(row.average_price) - ledgerNumber(row.target_buy_price)
+  : null;
 
 function App(){
   const [hash,setHash] = useState(route());
@@ -454,6 +489,8 @@ function App(){
           ? <NoticePage user={user} profile={profile} notices={notices} reload={loadNotices}/>
         : effectiveCurrent === 'ledger'
           ? <MerchantLedgerPage user={user} profile={profile}/>
+        : effectiveCurrent === 'ledger-buy'
+          ? <BuyPlanPage user={user} profile={profile}/>
           : effectiveCurrent === 'admin'
             ? <AdminPage
                 user={user}
@@ -2244,7 +2281,10 @@ function MerchantLedgerPage({user,profile}){
   return <section className="merchant-page">
     <div className="page-title merchant-title">
       <div><p className="mono">MERCHANT LEDGER</p><h1>내 장부</h1><p>인게임 장사 매입가와 판매가를 한 줄씩 기록하고 확정 순수익을 확인합니다.</p></div>
-      <button className="edit-badge" onClick={loadLedgerRows}>{loading ? '불러오는 중...' : '새로고침'}</button>
+      <div className="merchant-title-actions">
+        <button className="edit-badge secondary-edit" onClick={()=>go('#/ledger-buy')}>매입가 계산</button>
+        <button className="edit-badge" onClick={loadLedgerRows}>{loading ? '불러오는 중...' : '새로고침'}</button>
+      </div>
     </div>
     <div className="ledger-summary-grid">
       <article><span>매입 합계</span><b>{ledgerMoney(totalBuy)}</b><p>{activeRows.length.toLocaleString('ko-KR')}건 기록</p></article>
@@ -2300,6 +2340,163 @@ function MerchantLedgerRow({row,index,onChange,onRemove}){
     <td><input type="number" min="0" step="1" value={row.sell_unit_price ?? ''} onChange={change('sell_unit_price')} placeholder="판매 후 입력" /></td>
     <td><span className={`ledger-state ${sold ? 'sold' : complete ? 'holding' : 'draft'}`}>{!started ? '새 거래' : sold ? '판매 완료' : complete ? '보유 중' : '작성 중'}</span></td>
     <td className={`ledger-profit ${profitClass}`}>{profit == null ? '-' : ledgerMoney(profit)}</td>
+    <td><button className="ledger-delete" disabled={!started} onClick={()=>onRemove(row)}>삭제</button></td>
+  </tr>;
+}
+
+function BuyPlanPage({user,profile}){
+  const isAdmin = ['owner','admin'].includes(profile?.role);
+  const [rows,setRows] = useState(()=>ensureBuyPlanDraftRow([]));
+  const [loading,setLoading] = useState(true);
+  const [status,setStatus] = useState('');
+  const rowsRef = useRef(rows);
+  const timersRef = useRef({});
+  const creatingRef = useRef(new Set());
+
+  useEffect(()=>{ rowsRef.current = rows; },[rows]);
+  useEffect(()=>{
+    if(!isAdmin || !user?.id){ setLoading(false); return; }
+    loadBuyPlans();
+    return ()=>Object.values(timersRef.current).forEach(clearTimeout);
+  },[isAdmin,user?.id]);
+
+  async function loadBuyPlans(){
+    if(!isSupabaseConfigured){
+      setStatus('Supabase 연결 후 사용할 수 있습니다.');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const {data,error}=await supabase
+      .from('merchant_buy_plans')
+      .select('*')
+      .order('id',{ascending:true});
+    if(error){
+      setStatus(error.message.includes('merchant_buy_plans') ? '매입 계산 테이블이 아직 없습니다. Supabase SQL 업데이트가 필요합니다.' : error.message);
+      setRows(ensureBuyPlanDraftRow([]));
+    } else {
+      setRows(ensureBuyPlanDraftRow((data || []).map(rowFromBuyPlan)));
+      setStatus('매입가 계산표를 불러왔습니다.');
+    }
+    setLoading(false);
+  }
+
+  function updateCell(clientId,key,value){
+    const currentRow = rowsRef.current.find(row=>row.clientId===clientId);
+    if(!currentRow) return;
+    const patch = {[key]:value};
+    if(key === 'average_price') patch.target_buy_price = value ? String(suggestedBuyPrice(value)) : '';
+    const nextRow = {...currentRow,...patch};
+    setRows(prev=>ensureBuyPlanDraftRow(prev.map(row=>row.clientId===clientId ? {...row,...patch} : row)));
+    if(nextRow.id){
+      scheduleSave(nextRow);
+      return;
+    }
+    if(isBuyPlanComplete(nextRow)) createBuyPlan(nextRow);
+  }
+
+  async function createBuyPlan(row){
+    if(!user?.id || creatingRef.current.has(row.clientId)) return;
+    creatingRef.current.add(row.clientId);
+    setStatus('새 계산 줄 저장 중...');
+    const {data,error}=await supabase
+      .from('merchant_buy_plans')
+      .insert(buyPlanPayload(row,user.id))
+      .select('*')
+      .single();
+    creatingRef.current.delete(row.clientId);
+    if(error){
+      setStatus('저장 실패 · '+error.message);
+      return;
+    }
+    setRows(prev=>ensureBuyPlanDraftRow(prev.map(item=>item.clientId===row.clientId ? {...item,id:data.id,created_at:data.created_at,updated_at:data.updated_at} : item)));
+    setStatus('새 계산 줄이 저장되었습니다.');
+  }
+
+  function scheduleSave(row){
+    if(!row.id || !isBuyPlanComplete(row)) return;
+    clearTimeout(timersRef.current[row.clientId]);
+    timersRef.current[row.clientId] = setTimeout(async()=>{
+      const {user_id, ...payload}=buyPlanPayload(row,user.id);
+      setStatus('자동 저장 중...');
+      const {error}=await supabase.from('merchant_buy_plans').update(payload).eq('id',row.id);
+      setStatus(error ? '저장 실패 · '+error.message : '자동 저장됨');
+    },650);
+  }
+
+  async function removeRow(row){
+    if(!row.id){
+      setRows(prev=>ensureBuyPlanDraftRow(prev.filter(item=>item.clientId!==row.clientId)));
+      return;
+    }
+    if(!confirm(`${row.item_name || '계산 줄'}을 삭제할까요?`)) return;
+    const {error}=await supabase.from('merchant_buy_plans').delete().eq('id',row.id);
+    if(error){
+      setStatus('삭제 실패 · '+error.message);
+      return;
+    }
+    setRows(prev=>ensureBuyPlanDraftRow(prev.filter(item=>item.clientId!==row.clientId)));
+    setStatus('삭제되었습니다.');
+  }
+
+  const activeRows = rows.filter(row=>row.id || isBuyPlanComplete(row));
+  const totalAverage = activeRows.reduce((sum,row)=>sum+ledgerNumber(row.average_price),0);
+  const totalTarget = activeRows.reduce((sum,row)=>sum+ledgerNumber(row.target_buy_price),0);
+  const totalMargin = activeRows.reduce((sum,row)=>sum+(buyPlanMargin(row) || 0),0);
+
+  if(!isAdmin){
+    return <section className="placeholder-page"><div className="page-title"><h1>매입가 계산</h1><p>관리자만 접근할 수 있습니다.</p></div></section>;
+  }
+
+  return <section className="merchant-page">
+    <div className="page-title merchant-title">
+      <div><p className="mono">BUY PRICE PLAN</p><h1>매입가 계산</h1><p>평균 시세를 기준으로 내가 제시할 매입가를 빠르게 계산합니다.</p></div>
+      <div className="merchant-title-actions">
+        <button className="edit-badge secondary-edit" onClick={()=>go('#/ledger')}>내 장부</button>
+        <button className="edit-badge" onClick={loadBuyPlans}>{loading ? '불러오는 중...' : '새로고침'}</button>
+      </div>
+    </div>
+    <div className="ledger-summary-grid buy-plan-summary">
+      <article><span>계산 항목</span><b>{activeRows.length.toLocaleString('ko-KR')}개</b><p>저장된 매입 후보</p></article>
+      <article><span>평균 시세 합계</span><b>{ledgerMoney(totalAverage)}</b><p>입력한 평균가 기준</p></article>
+      <article><span>내 매입가 합계</span><b>{ledgerMoney(totalTarget)}</b><p>기본 60% 자동 계산</p></article>
+      <article className={totalMargin >= 0 ? 'profit' : 'loss'}><span>예상 여유폭</span><b>{ledgerMoney(totalMargin)}</b><p>평균 시세 - 내 매입가</p></article>
+    </div>
+    <article className="ledger-sheet-card">
+      <div className="board-head compact">
+        <div><h2>매입 후보 입력</h2><p>아이템과 평균 시세를 입력하면 내 매입가가 평균 시세의 60%로 자동 입력됩니다.</p></div>
+        <div className="status-pill">{status || '자동 저장 대기'}</div>
+      </div>
+      <div className="ledger-table-wrap buy-plan-table-wrap">
+        <table className="ledger-table buy-plan-table">
+          <thead>
+            <tr><th>#</th><th>아이템</th><th>평균 시세</th><th>내 매입가</th><th>시세 대비</th><th>예상 여유폭</th><th></th></tr>
+          </thead>
+          <tbody>
+            {rows.map((row,index)=><BuyPlanRow key={row.clientId} row={row} index={index} onChange={updateCell} onRemove={removeRow}/>)}
+          </tbody>
+        </table>
+      </div>
+      <p className="ledger-hint">내 매입가는 자동 계산 후 직접 수정할 수 있습니다. 평균 시세를 다시 바꾸면 60% 기준으로 다시 맞춰집니다.</p>
+    </article>
+  </section>;
+}
+
+function BuyPlanRow({row,index,onChange,onRemove}){
+  const started = isBuyPlanStarted(row);
+  const margin = buyPlanMargin(row);
+  const ratio = ledgerNumber(row.average_price) > 0 && ledgerNumber(row.target_buy_price) > 0
+    ? Math.round((ledgerNumber(row.target_buy_price) / ledgerNumber(row.average_price)) * 100)
+    : null;
+  const marginClass = margin == null ? '' : margin >= 0 ? 'up' : 'down';
+  const change = (key)=>(e)=>onChange(row.clientId,key,e.target.value);
+  return <tr className={`ledger-row ${started ? 'holding' : 'empty'}`}>
+    <td className="ledger-index">{started ? index + 1 : '+'}</td>
+    <td><input className="ledger-item-input" value={row.item_name || ''} onChange={change('item_name')} placeholder="아이템명" /></td>
+    <td><input type="number" min="0" step="1" value={row.average_price ?? ''} onChange={change('average_price')} placeholder="평균 시세" /></td>
+    <td><input type="number" min="0" step="1" value={row.target_buy_price ?? ''} onChange={change('target_buy_price')} placeholder="60% 자동" /></td>
+    <td><span className="ledger-state holding">{ratio == null ? '-' : `${ratio}%`}</span></td>
+    <td className={`ledger-profit ${marginClass}`}>{margin == null ? '-' : ledgerMoney(margin)}</td>
     <td><button className="ledger-delete" disabled={!started} onClick={()=>onRemove(row)}>삭제</button></td>
   </tr>;
 }

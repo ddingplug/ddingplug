@@ -697,3 +697,54 @@ create policy "Admins can delete own merchant trades" on public.merchant_trades
 revoke all on public.merchant_trades from anon;
 grant select, insert, update, delete on public.merchant_trades to authenticated;
 grant usage, select on sequence public.merchant_trades_id_seq to authenticated;
+
+-- ---------- merchant buy plans ----------
+create table if not exists public.merchant_buy_plans (
+  id bigserial primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  item_name text not null default '',
+  average_price numeric(14,2) not null default 0,
+  target_buy_price numeric(14,2) not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint merchant_buy_plans_average_nonnegative check (average_price >= 0),
+  constraint merchant_buy_plans_target_nonnegative check (target_buy_price >= 0)
+);
+
+alter table public.merchant_buy_plans add column if not exists user_id uuid references auth.users(id) on delete cascade;
+alter table public.merchant_buy_plans add column if not exists item_name text not null default '';
+alter table public.merchant_buy_plans add column if not exists average_price numeric(14,2) not null default 0;
+alter table public.merchant_buy_plans add column if not exists target_buy_price numeric(14,2) not null default 0;
+alter table public.merchant_buy_plans add column if not exists created_at timestamptz not null default now();
+alter table public.merchant_buy_plans add column if not exists updated_at timestamptz not null default now();
+
+create index if not exists merchant_buy_plans_user_id_idx
+  on public.merchant_buy_plans (user_id, id);
+
+drop trigger if exists set_merchant_buy_plans_updated_at on public.merchant_buy_plans;
+create trigger set_merchant_buy_plans_updated_at
+before update on public.merchant_buy_plans
+for each row execute function public.set_updated_at();
+
+alter table public.merchant_buy_plans enable row level security;
+drop policy if exists "Admins can read own merchant buy plans" on public.merchant_buy_plans;
+drop policy if exists "Admins can insert own merchant buy plans" on public.merchant_buy_plans;
+drop policy if exists "Admins can update own merchant buy plans" on public.merchant_buy_plans;
+drop policy if exists "Admins can delete own merchant buy plans" on public.merchant_buy_plans;
+create policy "Admins can read own merchant buy plans" on public.merchant_buy_plans
+  for select to authenticated
+  using ((select auth.uid()) = user_id and (select public.is_admin_user()));
+create policy "Admins can insert own merchant buy plans" on public.merchant_buy_plans
+  for insert to authenticated
+  with check ((select auth.uid()) = user_id and (select public.is_admin_user()));
+create policy "Admins can update own merchant buy plans" on public.merchant_buy_plans
+  for update to authenticated
+  using ((select auth.uid()) = user_id and (select public.is_admin_user()))
+  with check ((select auth.uid()) = user_id and (select public.is_admin_user()));
+create policy "Admins can delete own merchant buy plans" on public.merchant_buy_plans
+  for delete to authenticated
+  using ((select auth.uid()) = user_id and (select public.is_admin_user()));
+
+revoke all on public.merchant_buy_plans from anon;
+grant select, insert, update, delete on public.merchant_buy_plans to authenticated;
+grant usage, select on sequence public.merchant_buy_plans_id_seq to authenticated;

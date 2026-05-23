@@ -6220,6 +6220,14 @@ html[data-theme="dark"] .craft-lack {
   align-items: flex-start;
 }
 
+.merchant-title-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .ledger-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit,minmax(176px,1fr));
@@ -6294,6 +6302,10 @@ html[data-theme="dark"] .craft-lack {
   min-width: 1040px;
   border-collapse: separate;
   border-spacing: 0;
+}
+
+.buy-plan-table {
+  min-width: 760px;
 }
 
 .ledger-table th,
@@ -6524,6 +6536,10 @@ html[data-theme="dark"] .ledger-method-button.shop {
   .merchant-title {
     display: grid;
   }
+
+  .merchant-title-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 560px) {
@@ -6533,5 +6549,10 @@ html[data-theme="dark"] .ledger-method-button.shop {
 
   .ledger-sheet-card {
     padding: 14px;
+  }
+
+  .merchant-title-actions .edit-badge {
+    width: 100%;
+    justify-content: center;
   }
 }
