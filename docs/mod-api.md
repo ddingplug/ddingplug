@@ -154,11 +154,11 @@ Content-Type: application/json
 - 요청 본문은 64KB 이하만 허용합니다.
 - `items`는 한 요청에 최대 30개까지 허용합니다.
 - `minecraftId`는 영문, 숫자, 언더스코어 3~16자만 허용합니다.
+- `minecraftId`가 `profiles.minecraft_id`와 일치하지 않으면 제보를 거부합니다.
 - `price <= 0`이면 거부합니다.
 - `price > priceMax`이면 거부합니다.
 - 없는 `itemKey` 또는 `itemName`은 거부합니다.
-- `minecraftId`가 `profiles.minecraft_id`와 일치하면 해당 유저를 최근 수정자로 연결합니다.
-- 일치하지 않더라도 `reporter_minecraft_id`에는 기록합니다.
+- 웹사이트 가입 후 Minecraft ID를 등록한 유저만 최근 수정자로 연결되며 시세 제보가 가능합니다.
 
 응답 예시:
 
@@ -182,6 +182,38 @@ Content-Type: application/json
     }
   ],
   "rejected": []
+}
+```
+
+미가입 또는 Minecraft ID 미등록 응답 예시:
+
+```json
+{
+  "ok": false,
+  "code": "PROFILE_REQUIRED",
+  "error": "띵플러그 웹사이트 가입 후 마인크래프트 ID를 등록해야 시세 제보가 가능합니다."
+}
+```
+
+## 4. 모드 프로필 확인
+
+```http
+GET /api/mod-profile?minecraftId=creker8392
+x-ddingplug-api-key: DDINGPLUG_MOD_API_KEY
+```
+
+응답 예시:
+
+```json
+{
+  "ok": true,
+  "minecraftId": "creker8392",
+  "registered": true,
+  "profile": {
+    "minecraftId": "creker8392",
+    "displayName": "크레커",
+    "avatarUrl": "https://..."
+  }
 }
 ```
 

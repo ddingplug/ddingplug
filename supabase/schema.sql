@@ -42,6 +42,9 @@ alter table public.profiles add column if not exists role text default 'user';
 alter table public.profiles add column if not exists created_at timestamptz default now();
 alter table public.profiles add column if not exists updated_at timestamptz default now();
 
+create index if not exists profiles_minecraft_id_lower_idx
+  on public.profiles ((lower(minecraft_id)));
+
 -- ---------- market_prices ----------
 create table if not exists public.market_prices (
   id bigserial primary key,

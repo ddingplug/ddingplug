@@ -53,7 +53,34 @@ export default async function handler(req, res) {
     if (!items.length) return sendJson(res, 400, { ok: false, error: 'items is required.' });
     if (items.length > 30) return sendJson(res, 400, { ok: false, error: 'Too many items. Maximum is 30.' });
 
+    const minecraftId = cleanText(body.minecraftId, 16);
+    if (!minecraftId) {
+      return sendJson(res, 403, {
+        ok: false,
+        code: 'PROFILE_REQUIRED',
+        error: '띵플러그 웹사이트 가입 후 마인크래프트 ID를 등록해야 시세 제보가 가능합니다.'
+      });
+    }
+    if (minecraftId && !MINECRAFT_ID_RE.test(minecraftId)) {
+      return sendJson(res, 400, { ok: false, error: 'Invalid minecraftId.' });
+    }
+    const source = cleanText(body.source || 'minecraft_tooltip', 40) || 'minecraft_tooltip';
     const supabase = getServerSupabase({ service: true });
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id,minecraft_id')
+      .ilike('minecraft_id', minecraftId)
+      .limit(1);
+    if (profileError) throw profileError;
+    const reporterProfile = profiles?.[0] || null;
+    if (!reporterProfile) {
+      return sendJson(res, 403, {
+        ok: false,
+        code: 'PROFILE_REQUIRED',
+        error: '띵플러그 웹사이트 가입 후 마인크래프트 ID를 등록해야 시세 제보가 가능합니다.'
+      });
+    }
+
     const requestedKeys = [...new Set(items.map((item) => cleanText(item.itemKey, 80)).filter(Boolean))];
     const requestedNames = [...new Set(items.map((item) => cleanText(item.itemName, 120)).filter(Boolean))];
 
@@ -85,21 +112,6 @@ export default async function handler(req, res) {
 
     const byKey = new Map(allKnownRows.map((row) => [row.item_key, row]));
     const byName = new Map(allKnownRows.map((row) => [row.item_name, row]));
-
-    let reporterProfile = null;
-    const minecraftId = cleanText(body.minecraftId, 16);
-    if (minecraftId && !MINECRAFT_ID_RE.test(minecraftId)) {
-      return sendJson(res, 400, { ok: false, error: 'Invalid minecraftId.' });
-    }
-    const source = cleanText(body.source || 'minecraft_tooltip', 40) || 'minecraft_tooltip';
-    if (minecraftId) {
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id,minecraft_id')
-        .ilike('minecraft_id', minecraftId)
-        .limit(1);
-      if (!profileError && profiles?.length) reporterProfile = profiles[0];
-    }
 
     const accepted = [];
     const rejected = [];
@@ -143,7 +155,7 @@ export default async function handler(req, res) {
           .update({
             price,
             price_change: priceChange,
-            updated_by: reporterProfile?.id || null,
+            updated_by: reporterProfile.id,
             checked_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -157,9 +169,9 @@ export default async function handler(req, res) {
           category,
           old_price: row.price,
           new_price: price,
-          changed_by: reporterProfile?.id || null,
+          changed_by: reporterProfile.id,
           source,
-          reporter_minecraft_id: minecraftId || null,
+          reporter_minecraft_id: reporterProfile.minecraft_id || minecraftId,
           raw_payload: {
             item: { itemKey: inputKey || null, itemName: inputName || null, price, priceChange, personalPrice },
             request: { source, consentAccepted: body.consentAccepted === true },
@@ -184,8 +196,8 @@ export default async function handler(req, res) {
       ok: true,
       category,
       reporter: {
-        minecraftId: minecraftId || null,
-        matchedProfile: Boolean(reporterProfile),
+        minecraftId: reporterProfile.minecraft_id || minecraftId,
+        matchedProfile: true,
       },
       accepted,
       rejected,

@@ -52,11 +52,12 @@ Discord OAuth Redirect URL에는 배포 도메인과 로컬 개발 주소를 등
 - `GET /api/market-prices?category=cooking`
 - `GET /api/market-latest?category=craft`
 - `GET /api/mod-version`
+- `GET /api/mod-profile?minecraftId=PLAYER_NAME`
 - `POST /api/market-report`
 
 자세한 사용법은 `docs/mod-api.md`를 확인하세요.
 
-모드 제보 API는 `consentAccepted: true`가 포함된 요청만 처리합니다. 자동 판매, 자동 클릭, 자동 구매, 서버 조작, 플레이 자동화 기능은 포함하지 않습니다.
+모드 제보 API는 `consentAccepted: true`가 포함되고, `minecraftId`가 웹사이트 가입 프로필과 일치하는 요청만 처리합니다. 자동 판매, 자동 클릭, 자동 구매, 서버 조작, 플레이 자동화 기능은 포함하지 않습니다.
 
 ## 현재 모드 배포 기준
 
